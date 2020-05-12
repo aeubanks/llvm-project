@@ -553,6 +553,10 @@ public:
   Optional<ParamLoadedValue> describeLoadedValue(const MachineInstr &MI,
                                                  Register Reg) const override;
 
+  /// Return MIR formatter to format/parse MIR operands.  Target can override
+  /// this virtual function and return target specific MIR formatter.
+  virtual const MIRFormatter *getMIRFormatter() const override;
+
 protected:
   /// Commutes the operands in the given instruction by changing the operands
   /// order and/or changing the instruction's opcode and/or the immediate value

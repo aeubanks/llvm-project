@@ -410,6 +410,7 @@ enum OperandEncoding {
   ENUM_ENTRY(TYPE_R64,        "8-byte")                                        \
   ENUM_ENTRY(TYPE_IMM,        "immediate operand")                             \
   ENUM_ENTRY(TYPE_UIMM8,      "1-byte unsigned immediate operand")             \
+  ENUM_ENTRY(TYPE_CCODE,      "Condition code")                                \
   ENUM_ENTRY(TYPE_M,          "Memory operand")                                \
   ENUM_ENTRY(TYPE_MVSIBX,     "Memory operand using XMM index")                \
   ENUM_ENTRY(TYPE_MVSIBY,     "Memory operand using YMM index")                \

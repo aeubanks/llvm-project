@@ -885,7 +885,7 @@ OperandType RecognizableInstr::typeFromString(const std::string &s,
   TYPE("i64i32imm_brtarget",  TYPE_REL)
   TYPE("i16imm_brtarget",     TYPE_REL)
   TYPE("i32imm_brtarget",     TYPE_REL)
-  TYPE("ccode",               TYPE_IMM)
+  TYPE("ccode",               TYPE_CCODE)
   TYPE("AVX512RC",            TYPE_IMM)
   TYPE("brtarget32",          TYPE_REL)
   TYPE("brtarget16",          TYPE_REL)

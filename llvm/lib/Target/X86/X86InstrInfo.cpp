@@ -8411,6 +8411,75 @@ X86InstrInfo::describeLoadedValue(const MachineInstr &MI, Register Reg) const {
   }
 }
 
+/// Custom MIR formatter for X86.
+class X86MIRFormatter final : public MIRFormatter {
+  virtual void printImm(raw_ostream &OS, const MachineInstr &MI,
+                        Optional<unsigned> OpIdx, int64_t Imm) const {
+    if (MI.getOpcode() == X86::JCC_1 && OpIdx.hasValue() &&
+        OpIdx.getValue() == 1) {
+      switch (Imm) {
+      case X86::CondCode::COND_O:
+        OS << "O";
+        break;
+      case X86::CondCode::COND_NO:
+        OS << "NO";
+        break;
+      case X86::CondCode::COND_B:
+        OS << "B";
+        break;
+      case X86::CondCode::COND_AE:
+        OS << "AE";
+        break;
+      case X86::CondCode::COND_E:
+        OS << "E";
+        break;
+      case X86::CondCode::COND_NE:
+        OS << "NE";
+        break;
+      case X86::CondCode::COND_BE:
+        OS << "BE";
+        break;
+      case X86::CondCode::COND_A:
+        OS << "A";
+        break;
+      case X86::CondCode::COND_S:
+        OS << "S";
+        break;
+      case X86::CondCode::COND_NS:
+        OS << "NS";
+        break;
+      case X86::CondCode::COND_P:
+        OS << "P";
+        break;
+      case X86::CondCode::COND_NP:
+        OS << "NP";
+        break;
+      case X86::CondCode::COND_L:
+        OS << "L";
+        break;
+      case X86::CondCode::COND_GE:
+        OS << "GE";
+        break;
+      case X86::CondCode::COND_LE:
+        OS << "LE";
+        break;
+      case X86::CondCode::COND_G:
+        OS << "G";
+        break;
+      }
+    } else {
+      MIRFormatter::printImm(OS, MI, OpIdx, Imm);
+    }
+  }
+};
+
+/// Return MIR formatter to format/parse MIR operands.
+const MIRFormatter *X86InstrInfo::getMIRFormatter() const {
+  if (!Formatter.get())
+    Formatter = std::make_unique<X86MIRFormatter>();
+  return Formatter.get();
+}
+
 /// This is an architecture-specific helper function of reassociateOps.
 /// Set special operand attributes for new instructions after reassociation.
 void X86InstrInfo::setSpecialOperandAttr(MachineInstr &OldMI1,

@@ -1836,8 +1836,10 @@ public:
     return Formatter.get();
   }
 
-private:
+protected:
   mutable std::unique_ptr<MIRFormatter> Formatter;
+
+private:
   unsigned CallFrameSetupOpcode, CallFrameDestroyOpcode;
   unsigned CatchRetOpcode;
   unsigned ReturnOpcode;
