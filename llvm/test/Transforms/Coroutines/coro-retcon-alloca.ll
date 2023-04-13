@@ -6,7 +6,7 @@ target datalayout = "p:64:64:64"
 declare {ptr, ptr, i32} @prototype_f(ptr, i1)
 define {ptr, ptr, i32} @f(ptr %buffer, i32 %n) {
 ; CHECK-LABEL: @f(
-; CHECK-NEXT:  coro.return:
+; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[N_VAL_SPILL_ADDR:%.*]] = getelementptr inbounds [[F_FRAME:%.*]], ptr [[BUFFER:%.*]], i64 0, i32 1
 ; CHECK-NEXT:    store i32 [[N:%.*]], ptr [[N_VAL_SPILL_ADDR]], align 4
 ; CHECK-NEXT:    [[TMP0:%.*]] = tail call ptr @allocate(i32 [[N]])
@@ -42,7 +42,7 @@ cleanup:
 declare {ptr, i32} @prototype_g(ptr, i1)
 define {ptr, i32} @g(ptr %buffer, i32 %n) {
 ; CHECK-LABEL: @g(
-; CHECK-NEXT:  coro.return:
+; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    store i32 [[N:%.*]], ptr [[BUFFER:%.*]], align 4
 ; CHECK-NEXT:    [[TMP0:%.*]] = zext i32 [[N]] to i64
 ; CHECK-NEXT:    [[TMP1:%.*]] = alloca i8, i64 [[TMP0]], align 8
@@ -78,7 +78,7 @@ cleanup:
 declare {ptr, i32} @prototype_h(ptr, i1)
 define {ptr, i32} @h(ptr %buffer, i32 %n) {
 ; CHECK-LABEL: @h(
-; CHECK-NEXT:  coro.return:
+; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    store i32 [[N:%.*]], ptr [[BUFFER:%.*]], align 4
 ; CHECK-NEXT:    [[TMP0:%.*]] = insertvalue { ptr, i32 } { ptr @h.resume.0, i32 undef }, i32 [[N]], 1
 ; CHECK-NEXT:    ret { ptr, i32 } [[TMP0]]
@@ -111,7 +111,7 @@ cleanup:
 declare {ptr, i32} @prototype_i(ptr)
 define {ptr, i32} @i(ptr %buffer, i32 %n) {
 ; CHECK-LABEL: @i(
-; CHECK-NEXT:  coro.return:
+; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    store i32 [[N:%.*]], ptr [[BUFFER:%.*]], align 4
 ; CHECK-NEXT:    [[TMP0:%.*]] = insertvalue { ptr, i32 } { ptr @i.resume.0, i32 undef }, i32 [[N]], 1
 ; CHECK-NEXT:    ret { ptr, i32 } [[TMP0]]
@@ -143,7 +143,7 @@ loop2:
 declare {ptr, i32} @prototype_j(ptr)
 define {ptr, i32} @j(ptr %buffer, i32 %n) {
 ; CHECK-LABEL: @j(
-; CHECK-NEXT:  coro.return:
+; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    store i32 [[N:%.*]], ptr [[BUFFER:%.*]], align 4
 ; CHECK-NEXT:    [[TMP0:%.*]] = insertvalue { ptr, i32 } { ptr @j.resume.0, i32 undef }, i32 [[N]], 1
 ; CHECK-NEXT:    ret { ptr, i32 } [[TMP0]]
@@ -177,7 +177,7 @@ end:
 declare i32 @getSize()
 define {ptr, i32} @k(ptr %buffer, i32 %n, i1 %cond) {
 ; CHECK-LABEL: @k(
-; CHECK-NEXT:  PostSpill:
+; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[SIZE:%.*]] = tail call i32 @getSize()
 ; CHECK-NEXT:    br i1 [[COND:%.*]], label [[ALLOCA_BLOCK:%.*]], label [[CORO_RETURN:%.*]]
 ; CHECK:       coro.return:

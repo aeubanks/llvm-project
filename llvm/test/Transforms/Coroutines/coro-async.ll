@@ -119,7 +119,7 @@ define void @my_async_function_pa(ptr %ctxt, ptr %task, ptr %actor) {
 ; CHECK-LABEL: define swiftcc void @my_async_function(ptr swiftasync %async.ctxt, ptr %task, ptr %actor)
 ; CHECK-O0-LABEL: define swiftcc void @my_async_function(ptr swiftasync %async.ctxt, ptr %task, ptr %actor)
 ; CHECK-SAME: !dbg ![[SP1:[0-9]+]] {
-; CHECK: coro.return:
+; CHECK: entry:
 ; CHECK:   [[FRAMEPTR:%.*]] = getelementptr inbounds i8, ptr %async.ctxt, i64 128
 ; CHECK:   [[ACTOR_SPILL_ADDR:%.*]] = getelementptr inbounds i8, ptr %async.ctxt, i64 152
 ; CHECK:   store ptr %actor, ptr [[ACTOR_SPILL_ADDR]]

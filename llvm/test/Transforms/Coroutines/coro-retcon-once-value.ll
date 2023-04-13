@@ -6,15 +6,15 @@ target triple = "x86_64-apple-macosx10.12.0"
 
 define {ptr, i32} @f(ptr %buffer, ptr %array) {
 ; CHECK-LABEL: @f(
-; CHECK-NEXT:  PostSpill:
+; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    store ptr [[ARRAY:%.*]], ptr [[BUFFER:%.*]], align 8
 ; CHECK-NEXT:    [[LOAD:%.*]] = load i32, ptr [[ARRAY]], align 4
 ; CHECK-NEXT:    [[LOAD_POS:%.*]] = icmp sgt i32 [[LOAD]], 0
-; CHECK-NEXT:    [[SPEC_SELECT:%.*]] = select i1 [[LOAD_POS]], ptr @f.resume.0, ptr @f.resume.1
-; CHECK-NEXT:    [[SPEC_SELECT4:%.*]] = tail call i32 @llvm.smax.i32(i32 [[LOAD]], i32 0)
-; CHECK-NEXT:    [[TMP0:%.*]] = insertvalue { ptr, i32 } undef, ptr [[SPEC_SELECT]], 0
-; CHECK-NEXT:    [[TMP1:%.*]] = insertvalue { ptr, i32 } [[TMP0]], i32 [[SPEC_SELECT4]], 1
-; CHECK-NEXT:    ret { ptr, i32 } [[TMP1]]
+; CHECK-NEXT:    [[TMP0:%.*]] = select i1 [[LOAD_POS]], ptr @f.resume.0, ptr @f.resume.1
+; CHECK-NEXT:    [[TMP1:%.*]] = tail call i32 @llvm.smax.i32(i32 [[LOAD]], i32 0)
+; CHECK-NEXT:    [[TMP2:%.*]] = insertvalue { ptr, i32 } undef, ptr [[TMP0]], 0
+; CHECK-NEXT:    [[TMP3:%.*]] = insertvalue { ptr, i32 } [[TMP2]], i32 [[TMP1]], 1
+; CHECK-NEXT:    ret { ptr, i32 } [[TMP3]]
 ;
 entry:
   %id = call token @llvm.coro.id.retcon.once(i32 8, i32 8, ptr %buffer, ptr @prototype, ptr @allocate, ptr @deallocate)
@@ -51,10 +51,10 @@ define void @test(ptr %array) {
 ; CHECK-NEXT:    store ptr [[ARRAY:%.*]], ptr [[TMP0]], align 8
 ; CHECK-NEXT:    [[LOAD_I:%.*]] = load i32, ptr [[ARRAY]], align 4
 ; CHECK-NEXT:    [[LOAD_POS_I:%.*]] = icmp sgt i32 [[LOAD_I]], 0
-; CHECK-NEXT:    [[SPEC_SELECT_I:%.*]] = select i1 [[LOAD_POS_I]], ptr @f.resume.0, ptr @f.resume.1
-; CHECK-NEXT:    [[SPEC_SELECT4_I:%.*]] = tail call i32 @llvm.smax.i32(i32 [[LOAD_I]], i32 0)
-; CHECK-NEXT:    tail call void @print(i32 [[SPEC_SELECT4_I]])
-; CHECK-NEXT:    call void [[SPEC_SELECT_I]](ptr nonnull [[TMP0]], i1 zeroext false)
+; CHECK-NEXT:    [[TMP1:%.*]] = select i1 [[LOAD_POS_I]], ptr @f.resume.0, ptr @f.resume.1
+; CHECK-NEXT:    [[TMP2:%.*]] = tail call i32 @llvm.smax.i32(i32 [[LOAD_I]], i32 0)
+; CHECK-NEXT:    tail call void @print(i32 [[TMP2]])
+; CHECK-NEXT:    call void [[TMP1]](ptr nonnull [[TMP0]], i1 zeroext false)
 ; CHECK-NEXT:    ret void
 ;
 entry:

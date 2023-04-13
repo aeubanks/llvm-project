@@ -326,13 +326,13 @@ PassBuilder::buildO1FunctionSimplificationPipeline(OptimizationLevel Level,
   // scalars.
   FPM.addPass(SROAPass(SROAOptions::ModifyCFG));
 
-  // Catch trivial redundancies
-  FPM.addPass(EarlyCSEPass(true /* Enable mem-ssa. */));
-
+  FPM.addPass(InstCombinePass());
   // Hoisting of scalars and load expressions.
   FPM.addPass(
       SimplifyCFGPass(SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
-  FPM.addPass(InstCombinePass());
+
+  // Catch trivial redundancies
+  FPM.addPass(EarlyCSEPass(true /* Enable mem-ssa. */));
 
   FPM.addPass(LibCallsShrinkWrapPass());
 
@@ -478,6 +478,9 @@ PassBuilder::buildFunctionSimplificationPipeline(OptimizationLevel Level,
   // Form SSA out of local memory accesses after breaking apart aggregates into
   // scalars.
   FPM.addPass(SROAPass(SROAOptions::ModifyCFG));
+  FPM.addPass(InstCombinePass());
+  FPM.addPass(
+      SimplifyCFGPass(SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
 
   // Catch trivial redundancies
   FPM.addPass(EarlyCSEPass(true /* Enable mem-ssa. */));
@@ -502,9 +505,6 @@ PassBuilder::buildFunctionSimplificationPipeline(OptimizationLevel Level,
   FPM.addPass(JumpThreadingPass());
   FPM.addPass(CorrelatedValuePropagationPass());
 
-  FPM.addPass(
-      SimplifyCFGPass(SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
-  FPM.addPass(InstCombinePass());
   FPM.addPass(AggressiveInstCombinePass());
 
   if (EnableConstraintElimination)
@@ -963,7 +963,8 @@ PassBuilder::buildModuleSimplificationPipeline(OptimizationLevel Level,
   MPM.addPass(CoroEarlyPass());
 
   // Create an early function pass manager to cleanup the output of the
-  // frontend.
+  // frontend. This allows module/CGSCC passes that run before the function
+  // simplification pipeline to simplify more cases.
   FunctionPassManager EarlyFPM;
   // Lower llvm.expect to metadata before attempting transforms.
   // Compare/branch metadata may alter the behavior of passes like SimplifyCFG.
@@ -1028,18 +1029,6 @@ PassBuilder::buildModuleSimplificationPipeline(OptimizationLevel Level,
 
   // Optimize globals to try and fold them into constants.
   MPM.addPass(GlobalOptPass());
-
-  // Create a small function pass pipeline to cleanup after all the global
-  // optimizations.
-  FunctionPassManager GlobalCleanupPM;
-  // FIXME: Should this instead by a run of SROA?
-  GlobalCleanupPM.addPass(PromotePass());
-  GlobalCleanupPM.addPass(InstCombinePass());
-  invokePeepholeEPCallbacks(GlobalCleanupPM, Level);
-  GlobalCleanupPM.addPass(
-      SimplifyCFGPass(SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
-  MPM.addPass(createModuleToFunctionPassAdaptor(std::move(GlobalCleanupPM),
-                                                PTO.EagerlyInvalidateAnalyses));
 
   // Add all the requested passes for instrumentation PGO, if requested.
   if (PGOOpt && Phase != ThinOrFullLTOPhase::ThinLTOPostLink &&
