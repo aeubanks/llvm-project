@@ -332,7 +332,7 @@ PassBuilder::buildO1FunctionSimplificationPipeline(OptimizationLevel Level,
       SimplifyCFGPass(SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
 
   // Catch trivial redundancies
-  FPM.addPass(EarlyCSEPass(true /* Enable mem-ssa. */));
+  FPM.addPass(EarlyCSEPass());
 
   FPM.addPass(LibCallsShrinkWrapPass());
 
@@ -483,7 +483,7 @@ PassBuilder::buildFunctionSimplificationPipeline(OptimizationLevel Level,
       SimplifyCFGPass(SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
 
   // Catch trivial redundancies
-  FPM.addPass(EarlyCSEPass(true /* Enable mem-ssa. */));
+  FPM.addPass(EarlyCSEPass());
   if (EnableKnowledgeRetention)
     FPM.addPass(AssumeSimplifyPass());
 
