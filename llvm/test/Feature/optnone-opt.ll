@@ -43,7 +43,6 @@ attributes #0 = { optnone noinline }
 ; NPM-O1-DAG: Skipping pass: SROA
 ; NPM-O1-DAG: Skipping pass: EarlyCSEPass
 ; NPM-O1-DAG: Skipping pass: LowerExpectIntrinsicPass
-; NPM-O1-DAG: Skipping pass: PromotePass
 ; NPM-O1-DAG: Skipping pass: InstCombinePass
 
 ; Additional IR passes run at -O2 and higher.
