@@ -4,7 +4,7 @@ target datalayout = "E-p:32:32"
 
 define ptr @f(ptr %buffer, i32 %n, ptr swifterror %errorslot) {
 ; CHECK-LABEL: @f(
-; CHECK-NEXT:  coro.return:
+; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    store i32 [[N:%.*]], ptr [[BUFFER:%.*]], align 4
 ; CHECK-NEXT:    tail call void @print(i32 [[N]])
 ; CHECK-NEXT:    store ptr null, ptr [[ERRORSLOT:%.*]], align 4
@@ -43,7 +43,7 @@ cleanup:
 
 define ptr @g(ptr %buffer, i32 %n) {
 ; CHECK-LABEL: @g(
-; CHECK-NEXT:  coro.return:
+; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[TMP0:%.*]] = alloca swifterror ptr, align 4
 ; CHECK-NEXT:    store i32 [[N:%.*]], ptr [[BUFFER:%.*]], align 4
 ; CHECK-NEXT:    tail call void @print(i32 [[N]])
