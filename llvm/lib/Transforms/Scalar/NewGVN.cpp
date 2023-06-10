@@ -1522,7 +1522,8 @@ const Expression *NewGVN::performSymbolicLoadEvaluation(Instruction *I) const {
     return createConstantExpression(PoisonValue::get(LI->getType()));
   MemoryAccess *OriginalAccess = getMemoryAccess(I);
   MemoryAccess *DefiningAccess =
-      MSSAWalker->getClobberingMemoryAccess(OriginalAccess);
+      OriginalAccess ? MSSAWalker->getClobberingMemoryAccess(OriginalAccess)
+                     : MSSA->getLiveOnEntryDef();
 
   if (!MSSA->isLiveOnEntryDef(DefiningAccess)) {
     if (auto *MD = dyn_cast<MemoryDef>(DefiningAccess)) {
@@ -1545,7 +1546,7 @@ const Expression *NewGVN::performSymbolicLoadEvaluation(Instruction *I) const {
                                         DefiningAccess);
   // If our MemoryLeader is not our defining access, add a use to the
   // MemoryLeader, so that we get reprocessed when it changes.
-  if (LE->getMemoryLeader() != DefiningAccess)
+  if (OriginalAccess && LE->getMemoryLeader() != DefiningAccess)
     addMemoryUsers(LE->getMemoryLeader(), OriginalAccess);
   return LE;
 }
