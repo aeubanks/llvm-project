@@ -1422,15 +1422,17 @@ void GVNPass::eliminatePartiallyRedundantLoad(
       // MemoryDef (e.g. because it is volatile). The inserted loads are
       // guaranteed to load from the same definition.
       auto *LoadAcc = MSSA->getMemoryAccess(Load);
-      auto *DefiningAcc =
-          isa<MemoryDef>(LoadAcc) ? LoadAcc : LoadAcc->getDefiningAccess();
-      auto *NewAccess = MSSAU->createMemoryAccessInBB(
-          NewLoad, DefiningAcc, NewLoad->getParent(),
-          MemorySSA::BeforeTerminator);
-      if (auto *NewDef = dyn_cast<MemoryDef>(NewAccess))
-        MSSAU->insertDef(NewDef, /*RenameUses=*/true);
-      else
-        MSSAU->insertUse(cast<MemoryUse>(NewAccess), /*RenameUses=*/true);
+      if (LoadAcc) {
+        auto *DefiningAcc =
+            isa<MemoryDef>(LoadAcc) ? LoadAcc : LoadAcc->getDefiningAccess();
+        auto *NewAccess = MSSAU->createMemoryAccessInBB(
+            NewLoad, DefiningAcc, NewLoad->getParent(),
+            MemorySSA::BeforeTerminator);
+        if (auto *NewDef = dyn_cast<MemoryDef>(NewAccess))
+          MSSAU->insertDef(NewDef, /*RenameUses=*/true);
+        else
+          MSSAU->insertUse(cast<MemoryUse>(NewAccess), /*RenameUses=*/true);
+      }
     }
 
     // Transfer the old load's AA tags to the new load.

@@ -98,6 +98,8 @@ bool isReallyAClobber(const Value *Ptr, MemoryDef *Def, AAResults *AA) {
 
 bool isClobberedInFunction(const LoadInst *Load, MemorySSA *MSSA,
                            AAResults *AA) {
+  if (!MSSA->getMemoryAccess(Load))
+    return false;
   MemorySSAWalker *Walker = MSSA->getWalker();
   SmallVector<MemoryAccess *> WorkList{Walker->getClobberingMemoryAccess(Load)};
   SmallSet<MemoryAccess *, 8> Visited;

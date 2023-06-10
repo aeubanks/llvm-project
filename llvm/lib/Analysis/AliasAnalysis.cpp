@@ -477,6 +477,11 @@ ModRefInfo AAResults::getModRefInfo(const LoadInst *L,
     if (AR == AliasResult::NoAlias)
       return ModRefInfo::NoModRef;
   }
+
+  // If the load is from constant memory, it doesn't mod/ref anything.
+  if (!isRefSet(getModRefInfoMask(MemoryLocation::get(L))))
+    return ModRefInfo::NoModRef;
+
   // Otherwise, a load just reads.
   return ModRefInfo::Ref;
 }
