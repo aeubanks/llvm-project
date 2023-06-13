@@ -946,9 +946,11 @@ public:
 /// Printer pass for \c MemorySSA.
 class MemorySSAPrinterPass : public PassInfoMixin<MemorySSAPrinterPass> {
   raw_ostream &OS;
+  bool NoEnsureOptimizedUses;
 
 public:
-  explicit MemorySSAPrinterPass(raw_ostream &OS) : OS(OS) {}
+  explicit MemorySSAPrinterPass(raw_ostream &OS, bool NoEnsureOptimizedUses)
+      : OS(OS), NoEnsureOptimizedUses(NoEnsureOptimizedUses) {}
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
 };
