@@ -1014,7 +1014,7 @@ PassBuilder::buildModuleSimplificationPipeline(OptimizationLevel Level,
     // Compare/branch metadata may alter the behavior of passes like
     // SimplifyCFG.
     EarlyFPM.addPass(LowerExpectIntrinsicPass());
-    EarlyFPM.addPass(SimplifyCFGPass());
+    EarlyFPM.addPass(SimplifyCFGPass(SimplifyCFGOptions().speculateBlocks(false)));
     EarlyFPM.addPass(SROAPass(SROAOptions::ModifyCFG));
     EarlyFPM.addPass(EarlyCSEPass());
     if (Level == OptimizationLevel::O3)
@@ -1082,7 +1082,7 @@ PassBuilder::buildModuleSimplificationPipeline(OptimizationLevel Level,
   GlobalCleanupPM.addPass(InstCombinePass());
   invokePeepholeEPCallbacks(GlobalCleanupPM, Level);
   GlobalCleanupPM.addPass(
-      SimplifyCFGPass(SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
+      SimplifyCFGPass(SimplifyCFGOptions().convertSwitchRangeToICmp(true).speculateBlocks(false)));
   MPM.addPass(createModuleToFunctionPassAdaptor(std::move(GlobalCleanupPM),
                                                 PTO.EagerlyInvalidateAnalyses));
 

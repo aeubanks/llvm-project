@@ -36,26 +36,7 @@ define i32 @f() {
 ; CHECK-LABEL: define i32 @f
 ; CHECK-SAME: () local_unnamed_addr #[[ATTR0:[0-9]+]] {
 ; CHECK-NEXT:  bb:
-; CHECK-NEXT:    [[ALLOCA:%.*]] = alloca [3 x i32], align 4
-; CHECK-NEXT:    store i32 1, ptr [[ALLOCA]], align 4
-; CHECK-NEXT:    [[GETELEMENTPTR:%.*]] = getelementptr inbounds i32, ptr [[ALLOCA]], i64 1
-; CHECK-NEXT:    store i32 2, ptr [[GETELEMENTPTR]], align 4
-; CHECK-NEXT:    [[GETELEMENTPTR1:%.*]] = getelementptr inbounds i32, ptr [[ALLOCA]], i64 2
-; CHECK-NEXT:    store i32 3, ptr [[GETELEMENTPTR1]], align 4
-; CHECK-NEXT:    [[GETELEMENTPTR2:%.*]] = getelementptr inbounds i32, ptr [[ALLOCA]], i64 3
-; CHECK-NEXT:    br label [[BB11_I:%.*]]
-; CHECK:       bb11.i:
-; CHECK-NEXT:    [[PHI37_I:%.*]] = phi i32 [ [[ADD_I:%.*]], [[BB11_I]] ], [ 0, [[BB:%.*]] ]
-; CHECK-NEXT:    [[PHI6_I:%.*]] = phi ptr [ [[SPEC_SELECT_I:%.*]], [[BB11_I]] ], [ [[ALLOCA]], [[BB]] ]
-; CHECK-NEXT:    [[SPEC_SELECT_I]] = getelementptr i32, ptr [[PHI6_I]], i64 1
-; CHECK-NEXT:    [[LOAD_I:%.*]] = load i32, ptr [[PHI6_I]], align 4
-; CHECK-NEXT:    [[ADD_I]] = add i32 [[LOAD_I]], [[PHI37_I]]
-; CHECK-NEXT:    [[ICMP4_I:%.*]] = icmp ne ptr [[SPEC_SELECT_I]], [[GETELEMENTPTR2]]
-; CHECK-NEXT:    [[ICMP102_I:%.*]] = icmp ne ptr [[SPEC_SELECT_I]], null
-; CHECK-NEXT:    [[ICMP10_NOT_I:%.*]] = and i1 [[ICMP102_I]], [[ICMP4_I]]
-; CHECK-NEXT:    br i1 [[ICMP10_NOT_I]], label [[BB11_I]], label [[ZOT_EXIT:%.*]]
-; CHECK:       zot.exit:
-; CHECK-NEXT:    ret i32 [[ADD_I]]
+; CHECK-NEXT:    ret i32 6
 ;
 bb:
   %alloca = alloca [3 x i32], align 4
