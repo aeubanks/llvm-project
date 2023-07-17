@@ -14,6 +14,7 @@
 #include "ReduceFunctionBodies.h"
 #include "Delta.h"
 #include "Utils.h"
+#include "llvm/IR/CallingConv.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Instructions.h"
 
@@ -37,6 +38,18 @@ void llvm::reduceFunctionBodiesDeltaPass(TestRunner &Test) {
                "Reducing Function Bodies");
 }
 
+static bool shouldReduceCallingConvention(Function &F) {
+  // The CCC is very lenient, so most calling conventions should be able to be
+  // changed to it.
+  switch (F.getCallingConv()) {
+  case CallingConv::C:
+  case CallingConv::AMDGPU_CS_Chain:
+    return false;
+  default:
+    return true;
+  }
+}
+
 static void reduceFunctionData(Oracle &O, ReducerWorkItem &WorkItem) {
   for (Function &F : WorkItem.getModule()) {
     if (F.hasPersonalityFn()) {
@@ -54,6 +67,17 @@ static void reduceFunctionData(Oracle &O, ReducerWorkItem &WorkItem) {
 
     if (F.hasPrologueData() && !O.shouldKeep())
       F.setPrologueData(nullptr);
+
+    if (shouldReduceCallingConvention(F) && !O.shouldKeep()) {
+      // Update callee calling conventions to avoid UB when possible.
+      for (Use &U : F.uses()) {
+        if (auto *CB = dyn_cast<CallBase>(U.getUser())) {
+          if (&CB->getCalledOperandUse() == &U)
+            CB->setCallingConv(CallingConv::C);
+        }
+      }
+      F.setCallingConv(CallingConv::C);
+    }
   }
 }
 
