@@ -515,9 +515,26 @@ PassBuilder::buildO1FunctionSimplificationPipeline(OptimizationLevel Level,
   return FPM;
 }
 
-FunctionPassManager
+PreservedAnalyses
+FunctionSimplificationPipelineAdaptor::run(Function &F,
+                                           FunctionAnalysisManager &AM) {
+  bool IsO1 =
+      F.getFnAttributeAsParsedInteger("opt-level", DefaultOptLevel) == 1;
+  FunctionPassManager &FPM = IsO1 ? O1Pipeline : O23szPipeline;
+  return FPM.run(F, AM);
+}
+
+FunctionSimplificationPipelineAdaptor
 PassBuilder::buildFunctionSimplificationPipeline(OptimizationLevel Level,
                                                  ThinOrFullLTOPhase Phase) {
+  return FunctionSimplificationPipelineAdaptor(
+      buildO1FunctionSimplificationPipeline(OptimizationLevel::O1, Phase),
+      buildO23szFunctionSimplificationPipeline(OptimizationLevel::O3, Phase),
+      Level.getSpeedupLevel());
+}
+
+FunctionPassManager PassBuilder::buildO23szFunctionSimplificationPipeline(
+    OptimizationLevel Level, ThinOrFullLTOPhase Phase) {
   assert(Level != OptimizationLevel::O0 && "Must request optimizations!");
 
   // The O1 pipeline has a separate pipeline creation function to simplify

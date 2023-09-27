@@ -94,6 +94,23 @@ public:
   bool EagerlyInvalidateAnalyses;
 };
 
+class FunctionSimplificationPipelineAdaptor
+    : public PassInfoMixin<FunctionSimplificationPipelineAdaptor> {
+  FunctionPassManager O1Pipeline;
+  FunctionPassManager O23szPipeline;
+  int DefaultOptLevel;
+
+public:
+  FunctionSimplificationPipelineAdaptor(FunctionPassManager O1Pipeline,
+                                        FunctionPassManager O23szPipeline,
+                                        int DefaultOptLevel)
+      : O1Pipeline(std::move(O1Pipeline)),
+        O23szPipeline(std::move(O23szPipeline)),
+        DefaultOptLevel(DefaultOptLevel) {}
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+  static bool isRequired() { return true; }
+};
+
 /// This class provides access to building LLVM's passes.
 ///
 /// Its members provide the baseline state available to passes during their
@@ -180,6 +197,10 @@ public:
   ///
   /// \p Phase indicates the current ThinLTO phase.
   FunctionPassManager
+  buildO23szFunctionSimplificationPipeline(OptimizationLevel Level,
+                                           ThinOrFullLTOPhase Phase);
+
+  FunctionSimplificationPipelineAdaptor
   buildFunctionSimplificationPipeline(OptimizationLevel Level,
                                       ThinOrFullLTOPhase Phase);
 
