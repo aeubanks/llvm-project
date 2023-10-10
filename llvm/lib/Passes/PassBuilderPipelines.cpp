@@ -1087,7 +1087,8 @@ PassBuilder::buildModuleSimplificationPipeline(OptimizationLevel Level,
   MPM.addPass(CalledValuePropagationPass());
 
   // Optimize globals to try and fold them into constants.
-  MPM.addPass(GlobalOptPass());
+  MPM.addPass(ConditionalPass<GlobalOptPass, Module>(
+      [](Module &M) { return M.global_size() != 0; }, GlobalOptPass()));
 
   // Create a small function pass pipeline to cleanup after all the global
   // optimizations.
@@ -1145,8 +1146,10 @@ PassBuilder::buildModuleSimplificationPipeline(OptimizationLevel Level,
 /// TODO: Should LTO cause any differences to this set of passes?
 void PassBuilder::addVectorPasses(OptimizationLevel Level,
                                   FunctionPassManager &FPM, bool IsFullLTO) {
-  FPM.addPass(LoopVectorizePass(
-      LoopVectorizeOptions(!PTO.LoopInterleaving, !PTO.LoopVectorization)));
+  FPM.addPass(ConditionalPass<LoopVectorizePass, Function>(
+      [](Function &F) { return !F.hasOptSize(); },
+      LoopVectorizePass(LoopVectorizeOptions(!PTO.LoopInterleaving,
+                                             !PTO.LoopVectorization))));
 
   if (EnableInferAlignmentPass)
     FPM.addPass(InferAlignmentPass());

@@ -1354,6 +1354,31 @@ RepeatedPass<PassT> createRepeatedPass(int Count, PassT &&P) {
   return RepeatedPass<PassT>(Count, std::forward<PassT>(P));
 }
 
+template <typename PassT, typename IRUnitT>
+class ConditionalPass : public PassInfoMixin<ConditionalPass<PassT, IRUnitT>> {
+public:
+  ConditionalPass(std::function<bool(IRUnitT &)> Cond, PassT &&P)
+      : Cond(Cond), P(std::forward<PassT>(P)) {}
+
+  template <typename AnalysisManagerT, typename... Ts>
+  PreservedAnalyses run(IRUnitT &IR, AnalysisManagerT &AM, Ts &&...Args) {
+    if (!Cond(IR))
+      return PreservedAnalyses::all();
+    return P.run(IR, AM, Args...);
+  }
+
+  void printPipeline(raw_ostream &OS,
+                     function_ref<StringRef(StringRef)> MapClassName2PassName) {
+    OS << "conditional(";
+    P.printPipeline(OS, MapClassName2PassName);
+    OS << ')';
+  }
+
+private:
+  std::function<bool(IRUnitT &)> Cond;
+  PassT P;
+};
+
 } // end namespace llvm
 
 #endif // LLVM_IR_PASSMANAGER_H
