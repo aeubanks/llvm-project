@@ -70,6 +70,8 @@ unsigned CodeGenTypes::ClangCallConvToLLVMCallConv(CallingConv CC) {
   case CC_OpenCLKernel: return CGM.getTargetCodeGenInfo().getOpenCLKernelCallingConv();
   case CC_PreserveMost: return llvm::CallingConv::PreserveMost;
   case CC_PreserveAll: return llvm::CallingConv::PreserveAll;
+  case CC_PreserveNone:
+    return llvm::CallingConv::GHC;
   case CC_Swift: return llvm::CallingConv::Swift;
   case CC_SwiftAsync: return llvm::CallingConv::SwiftTail;
   case CC_M68kRTD: return llvm::CallingConv::M68k_RTD;
@@ -255,6 +257,9 @@ static CallingConv getCallingConventionForDecl(const ObjCMethodDecl *D,
 
   if (D->hasAttr<M68kRTDAttr>())
     return CC_M68kRTD;
+
+  if (D->hasAttr<PreserveNoneAttr>())
+    return CC_PreserveNone;
 
   return CC_C;
 }

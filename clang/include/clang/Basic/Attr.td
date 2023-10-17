@@ -2805,6 +2805,11 @@ def PreserveAll : DeclOrTypeAttr {
   let Documentation = [PreserveAllDocs];
 }
 
+def PreserveNone: DeclOrTypeAttr {
+  let Spellings = [Clang<"preserve_none">];
+  let Documentation = [PreserveNoneDocs];
+}
+
 def M68kRTD: DeclOrTypeAttr {
   let Spellings = [Clang<"m68k_rtd">];
   let Documentation = [M68kRTDDocs];

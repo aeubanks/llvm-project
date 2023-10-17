@@ -5367,6 +5367,13 @@ experimental at this time.
   }];
 }
 
+def PreserveNoneDocs : Documentation {
+  let Category = DocCatCallingConvs;
+  let Content = [{
+...
+  }];
+}
+
 def DeprecatedDocs : Documentation {
   let Category = DocCatDecl;
   let Content = [{

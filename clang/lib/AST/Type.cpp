@@ -3373,6 +3373,8 @@ StringRef FunctionType::getNameForCallConv(CallingConv CC) {
   case CC_SwiftAsync: return "swiftasynccall";
   case CC_PreserveMost: return "preserve_most";
   case CC_PreserveAll: return "preserve_all";
+  case CC_PreserveNone:
+    return "preserve_none";
   case CC_M68kRTD: return "m68k_rtd";
   }
 
