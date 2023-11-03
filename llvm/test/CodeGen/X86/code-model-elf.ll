@@ -6,8 +6,10 @@
 ; RUN: llc -verify-machineinstrs < %s -relocation-model=static -code-model=medium | FileCheck %s --check-prefix=CHECK --check-prefix=MEDIUM-STATIC
 ; RUN: llc -verify-machineinstrs < %s -relocation-model=static -code-model=large  | FileCheck %s --check-prefix=CHECK --check-prefix=LARGE-STATIC
 ; RUN: llc -verify-machineinstrs < %s -relocation-model=pic    -code-model=small  | FileCheck %s --check-prefix=CHECK --check-prefix=SMALL-PIC
+; RUN: llc -verify-machineinstrs < %s -relocation-model=pic    -code-model=small -x86-global-var-always-gotpcrel | FileCheck %s --check-prefix=CHECK --check-prefix=SMALL-PIC-ALWAYS-GOT
 ; RUN: llc -verify-machineinstrs < %s -relocation-model=pic    -code-model=medium -large-data-threshold=1000 | FileCheck %s --check-prefix=CHECK --check-prefix=MEDIUM-SMALL-DATA-PIC
 ; RUN: llc -verify-machineinstrs < %s -relocation-model=pic    -code-model=medium | FileCheck %s --check-prefix=CHECK --check-prefix=MEDIUM-PIC
+; RUN: llc -verify-machineinstrs < %s -relocation-model=pic    -code-model=medium -x86-global-var-always-gotpcrel  -large-data-threshold=1000 | FileCheck %s --check-prefix=CHECK --check-prefix=MEDIUM-PIC-ALWAYS-GOT
 ; RUN: llc -verify-machineinstrs < %s -relocation-model=pic    -code-model=large  | FileCheck %s --check-prefix=CHECK --check-prefix=LARGE-PIC
 
 ; Generated from this C source:
@@ -63,6 +65,11 @@ define dso_local ptr @lea_static_data() #0 {
 ; SMALL-PIC-NEXT:    leaq static_data(%rip), %rax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: lea_static_data:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movq static_data@GOTPCREL(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: lea_static_data:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    leaq static_data(%rip), %rax
@@ -74,6 +81,11 @@ define dso_local ptr @lea_static_data() #0 {
 ; MEDIUM-PIC-NEXT:    movabsq $static_data@GOTOFF, %rax
 ; MEDIUM-PIC-NEXT:    addq %rcx, %rax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: lea_static_data:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movq static_data@GOTPCREL(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: lea_static_data:
 ; LARGE-PIC:       # %bb.0:
@@ -108,6 +120,11 @@ define dso_local ptr @lea_global_data() #0 {
 ; SMALL-PIC-NEXT:    leaq global_data(%rip), %rax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: lea_global_data:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movq global_data@GOTPCREL(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: lea_global_data:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    leaq global_data(%rip), %rax
@@ -119,6 +136,11 @@ define dso_local ptr @lea_global_data() #0 {
 ; MEDIUM-PIC-NEXT:    movabsq $global_data@GOTOFF, %rax
 ; MEDIUM-PIC-NEXT:    addq %rcx, %rax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: lea_global_data:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movq global_data@GOTPCREL(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: lea_global_data:
 ; LARGE-PIC:       # %bb.0:
@@ -153,6 +175,11 @@ define dso_local ptr @lea_extern_data() #0 {
 ; SMALL-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: lea_extern_data:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: lea_extern_data:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
@@ -162,6 +189,11 @@ define dso_local ptr @lea_extern_data() #0 {
 ; MEDIUM-PIC:       # %bb.0:
 ; MEDIUM-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: lea_extern_data:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: lea_extern_data:
 ; LARGE-PIC:       # %bb.0:
@@ -196,6 +228,11 @@ define dso_local ptr @lea_unknown_size_data() #0 {
 ; SMALL-PIC-NEXT:    leaq unknown_size_data(%rip), %rax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: lea_unknown_size_data:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: lea_unknown_size_data:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    leaq _GLOBAL_OFFSET_TABLE_(%rip), %rcx
@@ -209,6 +246,11 @@ define dso_local ptr @lea_unknown_size_data() #0 {
 ; MEDIUM-PIC-NEXT:    movabsq $unknown_size_data@GOTOFF, %rax
 ; MEDIUM-PIC-NEXT:    addq %rcx, %rax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: lea_unknown_size_data:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: lea_unknown_size_data:
 ; LARGE-PIC:       # %bb.0:
@@ -245,6 +287,12 @@ define dso_local i32 @load_global_data() #0 {
 ; SMALL-PIC-NEXT:    movl global_data+8(%rip), %eax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: load_global_data:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movq global_data@GOTPCREL(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movl 8(%rax), %eax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: load_global_data:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    leaq global_data(%rip), %rax
@@ -257,6 +305,12 @@ define dso_local i32 @load_global_data() #0 {
 ; MEDIUM-PIC-NEXT:    movabsq $global_data@GOTOFF, %rcx
 ; MEDIUM-PIC-NEXT:    movl 8(%rax,%rcx), %eax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: load_global_data:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movq global_data@GOTPCREL(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movl 8(%rax), %eax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: load_global_data:
 ; LARGE-PIC:       # %bb.0:
@@ -296,6 +350,12 @@ define dso_local i32 @load_extern_data() #0 {
 ; SMALL-PIC-NEXT:    movl 8(%rax), %eax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: load_extern_data:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movl 8(%rax), %eax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: load_extern_data:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
@@ -307,6 +367,12 @@ define dso_local i32 @load_extern_data() #0 {
 ; MEDIUM-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
 ; MEDIUM-PIC-NEXT:    movl 8(%rax), %eax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: load_extern_data:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movl 8(%rax), %eax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: load_extern_data:
 ; LARGE-PIC:       # %bb.0:
@@ -345,6 +411,12 @@ define dso_local i32 @load_unknown_size_data() #0 {
 ; SMALL-PIC-NEXT:    movl unknown_size_data+8(%rip), %eax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: load_unknown_size_data:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movl 8(%rax), %eax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: load_unknown_size_data:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    leaq _GLOBAL_OFFSET_TABLE_(%rip), %rax
@@ -358,6 +430,12 @@ define dso_local i32 @load_unknown_size_data() #0 {
 ; MEDIUM-PIC-NEXT:    movabsq $unknown_size_data@GOTOFF, %rcx
 ; MEDIUM-PIC-NEXT:    movl 8(%rax,%rcx), %eax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: load_unknown_size_data:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movl 8(%rax), %eax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: load_unknown_size_data:
 ; LARGE-PIC:       # %bb.0:
@@ -409,6 +487,11 @@ define dso_local ptr @lea_static_fn() #0 {
 ; SMALL-PIC-NEXT:    leaq static_fn(%rip), %rax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: lea_static_fn:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    leaq static_fn(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: lea_static_fn:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    leaq static_fn(%rip), %rax
@@ -418,6 +501,11 @@ define dso_local ptr @lea_static_fn() #0 {
 ; MEDIUM-PIC:       # %bb.0:
 ; MEDIUM-PIC-NEXT:    leaq static_fn(%rip), %rax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: lea_static_fn:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    leaq static_fn(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: lea_static_fn:
 ; LARGE-PIC:       # %bb.0:
@@ -452,6 +540,11 @@ define dso_local ptr @lea_global_fn() #0 {
 ; SMALL-PIC-NEXT:    leaq global_fn(%rip), %rax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: lea_global_fn:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    leaq global_fn(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: lea_global_fn:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    leaq global_fn(%rip), %rax
@@ -461,6 +554,11 @@ define dso_local ptr @lea_global_fn() #0 {
 ; MEDIUM-PIC:       # %bb.0:
 ; MEDIUM-PIC-NEXT:    leaq global_fn(%rip), %rax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: lea_global_fn:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    leaq global_fn(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: lea_global_fn:
 ; LARGE-PIC:       # %bb.0:
@@ -495,6 +593,11 @@ define dso_local ptr @lea_extern_fn() #0 {
 ; SMALL-PIC-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: lea_extern_fn:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: lea_extern_fn:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
@@ -504,6 +607,11 @@ define dso_local ptr @lea_extern_fn() #0 {
 ; MEDIUM-PIC:       # %bb.0:
 ; MEDIUM-PIC-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: lea_extern_fn:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: lea_extern_fn:
 ; LARGE-PIC:       # %bb.0:
@@ -573,6 +681,11 @@ define dso_local float @load_constant_pool(float %x) #0 {
 ; SMALL-PIC-NEXT:    addss {{\.?LCPI[0-9]+_[0-9]+}}(%rip), %xmm0
 ; SMALL-PIC-NEXT:    retq
 ;
+; SMALL-PIC-ALWAYS-GOT-LABEL: load_constant_pool:
+; SMALL-PIC-ALWAYS-GOT:       # %bb.0:
+; SMALL-PIC-ALWAYS-GOT-NEXT:    addss {{\.?LCPI[0-9]+_[0-9]+}}(%rip), %xmm0
+; SMALL-PIC-ALWAYS-GOT-NEXT:    retq
+;
 ; MEDIUM-SMALL-DATA-PIC-LABEL: load_constant_pool:
 ; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
 ; MEDIUM-SMALL-DATA-PIC-NEXT:    addss {{\.?LCPI[0-9]+_[0-9]+}}(%rip), %xmm0
@@ -582,6 +695,11 @@ define dso_local float @load_constant_pool(float %x) #0 {
 ; MEDIUM-PIC:       # %bb.0:
 ; MEDIUM-PIC-NEXT:    addss {{\.?LCPI[0-9]+_[0-9]+}}(%rip), %xmm0
 ; MEDIUM-PIC-NEXT:    retq
+;
+; MEDIUM-PIC-ALWAYS-GOT-LABEL: load_constant_pool:
+; MEDIUM-PIC-ALWAYS-GOT:       # %bb.0:
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    addss {{\.?LCPI[0-9]+_[0-9]+}}(%rip), %xmm0
+; MEDIUM-PIC-ALWAYS-GOT-NEXT:    retq
 ;
 ; LARGE-PIC-LABEL: load_constant_pool:
 ; LARGE-PIC:       # %bb.0:

@@ -67,6 +67,8 @@ X86Subtarget::classifyGlobalReference(const GlobalValue *GV) const {
   return classifyGlobalReference(GV, *GV->getParent());
 }
 
+static cl::opt<bool> GlobalVarAlwaysGOTPCREL("x86-global-var-always-gotpcrel");
+
 unsigned char
 X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
   // Tagged globals have non-zero upper bits, which makes direct references
@@ -89,7 +91,9 @@ X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
         llvm_unreachable("Tiny codesize model not supported on X86");
       case CodeModel::Small:
       case CodeModel::Kernel:
-        return X86II::MO_NO_FLAG;
+        return (GlobalVarAlwaysGOTPCREL && isa_and_nonnull<GlobalVariable>(GV))
+                   ? X86II::MO_GOTPCREL
+                   : X86II::MO_NO_FLAG;
 
       // The large PIC code model uses GOTOFF.
       case CodeModel::Large:
@@ -102,11 +106,13 @@ X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
         // function so we need to use isa_and_nonnull.
         if (isa_and_nonnull<Function>(GV))
           return X86II::MO_NO_FLAG; // All code is RIP-relative
+        if (GlobalVarAlwaysGOTPCREL && isa_and_nonnull<GlobalVariable>(GV))
+          return X86II::MO_GOTPCREL;
         if (auto *GVar = dyn_cast_or_null<GlobalVariable>(GV)) {
           if (TM.isLargeData(GVar))
             return X86II::MO_GOTOFF;
         }
-        return X86II::MO_NO_FLAG;    // Local symbols use GOTOFF.
+        return X86II::MO_NO_FLAG;
       }
       llvm_unreachable("invalid code model");
     }
