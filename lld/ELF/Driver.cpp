@@ -1438,6 +1438,9 @@ static void readConfigs(opt::InputArgList &args) {
   config->warnBackrefs =
       args.hasFlag(OPT_warn_backrefs, OPT_no_warn_backrefs, false);
   config->warnCommon = args.hasFlag(OPT_warn_common, OPT_no_warn_common, false);
+  config->warnDifferentSectionFlags =
+      args.hasFlag(OPT_warn_different_section_flags,
+                   OPT_no_warn_different_section_flags, true);
   config->warnSymbolOrdering =
       args.hasFlag(OPT_warn_symbol_ordering, OPT_no_warn_symbol_ordering, true);
   config->whyExtract = args.getLastArgValue(OPT_why_extract);

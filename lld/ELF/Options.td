@@ -514,6 +514,10 @@ defm warn_common: B<"warn-common",
     "Warn about duplicate common symbols",
     "Do not warn about duplicate common symbols (default)">;
 
+defm warn_different_section_flags: B<"warn-different-section-flags",
+    "Warn about mixing different section flags (default)",
+    "Do not warn about mixing different section flags">;
+
 defm warn_ifunc_textrel: BB<"warn-ifunc-textrel",
     "Warn about using ifunc symbols with text relocations",
     "Do not warn about using ifunc symbols with text relocations (default)">;

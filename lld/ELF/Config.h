@@ -296,6 +296,7 @@ struct Config {
   bool warnBackrefs;
   llvm::SmallVector<llvm::GlobPattern, 0> warnBackrefsExclude;
   bool warnCommon;
+  bool warnDifferentSectionFlags;
   bool warnMissingEntry;
   bool warnSymbolOrdering;
   bool writeAddends;

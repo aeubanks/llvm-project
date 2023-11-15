@@ -145,10 +145,17 @@ void OutputSection::commitSection(InputSection *isec) {
     flags = isec->flags;
   } else {
     // Otherwise, check if new type or flags are compatible with existing ones.
-    if ((flags ^ isec->flags) & SHF_TLS)
-      error("incompatible section flags for " + name + "\n>>> " +
-            toString(isec) + ": 0x" + utohexstr(isec->flags) +
-            "\n>>> output section " + name + ": 0x" + utohexstr(flags));
+    if (LLVM_UNLIKELY(flags != isec->flags)) {
+      bool isError = (flags ^ isec->flags) & SHF_TLS;
+      if (isError || config->warnDifferentSectionFlags) {
+        void (*fn)(const Twine &) =
+            isError ? static_cast<void (*)(const Twine &)>(&error) : &warn;
+        InputSection *conflictISec = getFirstInputSection(this);
+        fn("incompatible section flags for " + name + "\n>>> " +
+           toString(conflictISec) + ": 0x" + utohexstr(conflictISec->flags) +
+           "\n>>> " + toString(isec) + ": 0x" + utohexstr(isec->flags));
+      }
+    }
   }
 
   isec->parent = this;
