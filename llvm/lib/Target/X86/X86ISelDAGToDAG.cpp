@@ -3189,12 +3189,17 @@ bool X86DAGToDAGISel::isSExtAbsoluteSymbolRef(unsigned Width, SDNode *N) const {
   if (!GA)
     return false;
 
-  std::optional<ConstantRange> CR = GA->getGlobal()->getAbsoluteSymbolRange();
-  if (!CR)
-    return Width == 32 && TM.getCodeModel() == CodeModel::Small;
+  auto *GV = GA->getGlobal();
+  std::optional<ConstantRange> CR = GV->getAbsoluteSymbolRange();
+  if (CR)
+    return CR->getSignedMin().sge(-1ull << Width) &&
+           CR->getSignedMax().slt(1ull << Width);
 
-  return CR->getSignedMin().sge(-1ull << Width) &&
-         CR->getSignedMax().slt(1ull << Width);
+  if (TM.getCodeModel() == CodeModel::Large ||
+      TM.getCodeModel() == CodeModel::Kernel)
+    return false;
+
+  return Width == 32 && !TM.isLargeGlobalValue(GV);
 }
 
 X86::CondCode X86DAGToDAGISel::getCondFromNode(SDNode *N) const {
