@@ -72,8 +72,6 @@ using ValueName = StringMapEntry<Value *>;
 /// objects that watch it and listen to RAUW and Destroy events.  See
 /// llvm/IR/ValueHandle.h for details.
 class Value {
-  Type *VTy;
-  Use *UseList;
 
   friend class ValueAsMetadata; // Allow access to IsUsedByMD.
   friend class ValueHandleBase;
@@ -119,6 +117,9 @@ protected:
   unsigned HasMetadata : 1; // Has metadata attached to this?
   unsigned HasHungOffUses : 1;
   unsigned HasDescriptor : 1;
+
+  Type *VTy;
+  Use *UseList;
 
 private:
   template <typename UseT> // UseT == 'Use' or 'const Use'
