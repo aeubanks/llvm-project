@@ -72,6 +72,7 @@
 #include "llvm/IR/Comdat.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/ConstantRange.h"
+#include "llvm/IR/ConstantRangeList.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/ConvergenceVerifier.h"
 #include "llvm/IR/DataLayout.h"
@@ -2054,6 +2055,28 @@ void Verifier::verifyParameterAttrs(AttributeSet Attrs, Type *Ty,
       SmallPtrSet<Type *, 4> Visited;
       Check(Attrs.getPreallocatedType()->isSized(&Visited),
             "Attribute 'preallocated' does not support unsized types!", V);
+    }
+  }
+
+  if (Attrs.hasAttribute(Attribute::Initializes)) {
+    auto Inits = Attrs.getAttribute(Attribute::Initializes)
+                     .getValueAsConstantRangeList();
+    Check(!Inits.empty(), "Attribute 'initializes' does not support empty list",
+          V);
+
+    Check(Inits.getRange(0).getLower().slt(Inits.getRange(0).getUpper()),
+          "Attribute 'initializes' requires interval lower less than upper", V);
+    for (size_t i = 1; i < Inits.size(); i++) {
+      auto Previous = Inits.getRange(i - 1);
+      auto Current = Inits.getRange(i);
+      Check(Current.getLower().slt(Current.getUpper()),
+            "Attribute 'initializes' requires interval lower less than upper",
+            V);
+      Check(Current.getLower().sgt(Previous.getLower()),
+            "Attribute 'initializes' requires intervals in ascending order!",
+            V);
+      Check(Current.getLower().sgt(Previous.getUpper()),
+            "Attribute 'initializes' requires intervals merged!", V);
     }
   }
 
