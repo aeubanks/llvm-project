@@ -33,6 +33,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Comdat.h"
 #include "llvm/IR/Constant.h"
+#include "llvm/IR/ConstantRangeList.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/DebugLoc.h"
@@ -859,6 +860,8 @@ static uint64_t getAttrKindEncoding(Attribute::AttrKind Kind) {
     return bitc::ATTR_KIND_DEAD_ON_UNWIND;
   case Attribute::Range:
     return bitc::ATTR_KIND_RANGE;
+  case Attribute::Initializes:
+    return bitc::ATTR_KIND_INITIALIZES;
   case Attribute::EndAttrKinds:
     llvm_unreachable("Can not encode end-attribute kinds marker.");
   case Attribute::None:
@@ -943,11 +946,20 @@ void ModuleBitcodeWriter::writeAttributeGroupTable() {
         Record.push_back(getAttrKindEncoding(Attr.getKindAsEnum()));
         if (Ty)
           Record.push_back(VE.getTypeID(Attr.getValueAsType()));
-      } else {
-        assert(Attr.isConstantRangeAttribute());
+      } else if (Attr.isConstantRangeAttribute()) {
         Record.push_back(7);
         Record.push_back(getAttrKindEncoding(Attr.getKindAsEnum()));
         emitConstantRange(Record, Attr.getValueAsConstantRange());
+      } else {
+        assert(Attr.isConstantRangeListAttribute());
+        Record.push_back(8);
+        Record.push_back(getAttrKindEncoding(Attr.getKindAsEnum()));
+        ConstantRangeList CRL = Attr.getValueAsConstantRangeList();
+        Record.push_back(CRL.size());
+        for (auto &CR : CRL) {
+          emitSignedInt64(Record, CR.getLower().getSExtValue());
+          emitSignedInt64(Record, CR.getUpper().getSExtValue());
+        }
       }
     }
 
