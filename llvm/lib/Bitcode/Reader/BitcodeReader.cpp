@@ -30,6 +30,7 @@
 #include "llvm/IR/CallingConv.h"
 #include "llvm/IR/Comdat.h"
 #include "llvm/IR/Constant.h"
+#include "llvm/IR/ConstantRangeList.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DebugInfo.h"
@@ -2148,6 +2149,8 @@ static Attribute::AttrKind getAttrFromCode(uint64_t Code) {
     return Attribute::DeadOnUnwind;
   case bitc::ATTR_KIND_RANGE:
     return Attribute::Range;
+  case bitc::ATTR_KIND_INITIALIZES:
+    return Attribute::Initializes;
   }
 }
 
@@ -2332,6 +2335,22 @@ Error BitcodeReader::parseAttributeGroupBlock() {
           i--;
 
           B.addConstantRangeAttr(Kind, MaybeCR.get());
+        } else if (Record[i] == 8) {
+          Attribute::AttrKind Kind;
+          if (Error Err = parseAttrKind(Record[++i], &Kind))
+            return Err;
+          if (!Attribute::isConstantRangeListAttrKind(Kind))
+            return error("Not a constant range list attribute");
+
+          ConstantRangeList CRL;
+          int RangeSize = Record[++i];
+          assert(i + 2 * RangeSize < e);
+          for (int Idx = 0; Idx < RangeSize; ++Idx) {
+            int64_t Start = BitcodeReader::decodeSignRotatedValue(Record[++i]);
+            int64_t End = BitcodeReader::decodeSignRotatedValue(Record[++i]);
+            CRL.append(Start, End);
+          }
+          B.addConstantRangeListAttr(Kind, CRL);
         } else {
           return error("Invalid attribute group entry");
         }

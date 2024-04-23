@@ -15,6 +15,7 @@
 #include "llvm/Transforms/IPO/FunctionAttrs.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/PostOrderIterator.h"
 #include "llvm/ADT/SCCIterator.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SetVector.h"
@@ -36,6 +37,7 @@
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constant.h"
+#include "llvm/IR/ConstantRangeList.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InstIterator.h"
@@ -866,9 +868,136 @@ static bool addAccessAttr(Argument *A, Attribute::AttrKind R) {
   return true;
 }
 
+struct ArgumentUseOffset {
+  Use *U;
+  int64_t Offset;
+};
+
+template <> struct llvm::DenseMapInfo<ArgumentUseOffset> {
+  static inline ArgumentUseOffset getEmptyKey() { return {nullptr, 0}; }
+  static inline ArgumentUseOffset getTombstoneKey() { return {nullptr, -1}; }
+  static inline unsigned getHashValue(const ArgumentUseOffset &AUO) {
+    return DenseMapInfo<Use *>::getHashValue(AUO.U);
+  }
+  static bool isEqual(const ArgumentUseOffset &LHS,
+                      const ArgumentUseOffset &RHS) {
+    return LHS.U == RHS.U;
+  }
+};
+
+static bool inferInitializes(Argument &A, Function &F) {
+  auto &DL = F.getParent()->getDataLayout();
+  DenseMap<const BasicBlock *, DenseSet<ArgumentUseOffset>> UsesPerBlock;
+  SmallVector<ArgumentUseOffset, 4> Worklist;
+  DenseSet<ArgumentUseOffset> Visited;
+  for (Use &U : A.uses()) {
+    Worklist.push_back({&U, 0});
+  }
+
+  bool HasStore = false;
+  auto PointerSize =
+      DL.getIndexSizeInBits(A.getType()->getPointerAddressSpace());
+  while (!Worklist.empty()) {
+    ArgumentUseOffset AUO = Worklist.pop_back_val();
+    User *U = AUO.U->getUser();
+    if (auto *GEP = dyn_cast<GEPOperator>(U)) {
+      APInt Offset(PointerSize, 0,
+                   /*isSigned=*/true);
+      if (GEP->accumulateConstantOffset(DL, Offset)) {
+        for (Use &U : GEP->uses()) {
+          Worklist.push_back({&U, AUO.Offset + Offset.getSExtValue()});
+        }
+        continue;
+      }
+    }
+    if (!HasStore) {
+      if (auto *SI = dyn_cast<StoreInst>(U)) {
+        HasStore = SI->isSimple();
+      }
+    }
+    UsesPerBlock.getOrInsertDefault(cast<Instruction>(U)->getParent())
+        .insert(AUO);
+  }
+  if (!HasStore) {
+    return false;
+  }
+
+  DenseMap<const BasicBlock *, ConstantRangeList> Initialized;
+  for (const BasicBlock *BB : post_order(&F)) {
+    ConstantRangeList CRL;
+
+    // Start with intersection of successors.
+    bool HasAddedSuccessor = false;
+    for (auto *Succ : successors(BB)) {
+      if (auto SuccI = Initialized.find(Succ); SuccI != Initialized.end()) {
+        if (HasAddedSuccessor) {
+          CRL = CRL.intersectWith(SuccI->second);
+        } else {
+          CRL = SuccI->second;
+          HasAddedSuccessor = true;
+        }
+      } else {
+        CRL = ConstantRangeList();
+        break;
+      }
+    }
+
+    if (auto UPB = UsesPerBlock.find(BB); UPB != UsesPerBlock.end()) {
+      // Sort uses in this block by instruction order.
+      SmallVector<ArgumentUseOffset, 2> Uses;
+      append_range(Uses, UPB->second);
+      sort(Uses, [](ArgumentUseOffset &AUO1, ArgumentUseOffset &AUO2) {
+        return cast<Instruction>(AUO1.U->getUser())
+            ->comesBefore(cast<Instruction>(AUO2.U->getUser()));
+      });
+
+      // From the end of the block to the beginning of the block, set
+      // initializes ranges.
+      for (ArgumentUseOffset &AUO : reverse(Uses)) {
+        // For simple stores to the argument, add store range.
+        if (auto *SI = dyn_cast<StoreInst>(AUO.U->getUser());
+            SI && SI->isSimple() && &SI->getOperandUse(1) == AUO.U) {
+          int64_t StoreSize = DL.getTypeStoreSize(SI->getAccessType());
+          CRL.insert(ConstantRange(APInt(64, AUO.Offset, true),
+                                   APInt(64, AUO.Offset + StoreSize, true)));
+        }
+        // Treat all other instructions as arbitrary memory accesses.
+        else {
+          CRL = ConstantRangeList();
+        }
+      }
+    }
+
+    if (!CRL.empty()) {
+      Initialized[BB] = CRL;
+    }
+  }
+
+  auto EntryCRLI = Initialized.find(&F.getEntryBlock());
+  if (EntryCRLI == Initialized.end()) {
+    return false;
+  }
+
+  ConstantRangeList EntryCRL = EntryCRLI->second;
+
+  if (A.hasAttribute(Attribute::Initializes)) {
+    ConstantRangeList PreviousCRL =
+        A.getAttribute(Attribute::Initializes).getValueAsConstantRangeList();
+    if (PreviousCRL == EntryCRL) {
+      return false;
+    }
+    EntryCRL = EntryCRL.unionWith(PreviousCRL);
+  }
+
+  A.addAttr(Attribute::get(A.getContext(), Attribute::Initializes, EntryCRL));
+
+  return true;
+}
+
 /// Deduce nocapture attributes for the SCC.
 static void addArgumentAttrs(const SCCNodeSet &SCCNodes,
-                             SmallSet<Function *, 8> &Changed) {
+                             SmallSet<Function *, 8> &Changed,
+                             bool NoInitialized) {
   ArgumentGraph AG;
 
   // Check each function in turn, determining which pointer arguments are not
@@ -935,6 +1064,10 @@ static void addArgumentAttrs(const SCCNodeSet &SCCNodes,
         if (R != Attribute::None)
           if (addAccessAttr(&A, R))
             Changed.insert(F);
+      }
+      if (!NoInitialized && !A.onlyReadsMemory()) {
+        if (inferInitializes(A, *F))
+          Changed.insert(F);
       }
     }
   }
@@ -1818,13 +1951,13 @@ deriveAttrsInPostOrder(ArrayRef<Function *> Functions, AARGetterT &&AARGetter,
 
   SmallSet<Function *, 8> Changed;
   if (ArgAttrsOnly) {
-    addArgumentAttrs(Nodes.SCCNodes, Changed);
+    addArgumentAttrs(Nodes.SCCNodes, Changed, ArgAttrsOnly);
     return Changed;
   }
 
   addArgumentReturnedAttrs(Nodes.SCCNodes, Changed);
   addMemoryAttrs(Nodes.SCCNodes, AARGetter, Changed);
-  addArgumentAttrs(Nodes.SCCNodes, Changed);
+  addArgumentAttrs(Nodes.SCCNodes, Changed, ArgAttrsOnly);
   inferConvergent(Nodes.SCCNodes, Changed);
   addNoReturnAttrs(Nodes.SCCNodes, Changed);
   addWillReturn(Nodes.SCCNodes, Changed);
