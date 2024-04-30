@@ -15,6 +15,7 @@
 #include "llvm/Transforms/IPO/FunctionAttrs.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/PostOrderIterator.h"
 #include "llvm/ADT/SCCIterator.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SetVector.h"
@@ -36,6 +37,7 @@
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constant.h"
+#include "llvm/IR/ConstantRangeList.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InstIterator.h"
@@ -866,9 +868,258 @@ static bool addAccessAttr(Argument *A, Attribute::AttrKind R) {
   return true;
 }
 
+struct InitializesUse {
+  Use *U;
+  std::optional<int64_t> Offset;
+};
+
+struct InitializesInfo {
+  std::optional<int64_t> Offset;
+  unsigned CallBaseArgNo;
+  bool IsClobber;
+};
+
+struct UsesPerBlockInfo {
+  DenseMap<Instruction *, InitializesInfo> Insts;
+  bool HasInitializes;
+  bool HasClobber;
+};
+
+static bool inferInitializes(Argument &A, Function &F) {
+  auto &DL = F.getParent()->getDataLayout();
+  BasicBlock &EntryBB = F.getEntryBlock();
+  DenseMap<const BasicBlock *, UsesPerBlockInfo> UsesPerBlock;
+  SmallVector<InitializesUse, 4> Worklist;
+  for (Use &U : A.uses()) {
+    Worklist.push_back({&U, 0});
+  }
+
+  bool HasAnyInitialize = false;
+  bool HasInitializeOutsideEntryBB = false;
+  auto PointerSize =
+      DL.getIndexSizeInBits(A.getType()->getPointerAddressSpace());
+  // No need for a visited set because we don't look through phis, so there are
+  // no cycles.
+  while (!Worklist.empty()) {
+    InitializesUse IU = Worklist.pop_back_val();
+    User *U = IU.U->getUser();
+    // Add GEP uses to worklist.
+    // If the GEP is not a constant GEP, set IsInitialize to false.
+    if (auto *GEP = dyn_cast<GEPOperator>(U)) {
+      APInt Offset(PointerSize, 0,
+                   /*isSigned=*/true);
+      bool IsConstGEP = GEP->accumulateConstantOffset(DL, Offset);
+      std::optional<int64_t> NewOffset = std::nullopt;
+      if (IsConstGEP && IU.Offset.has_value()) {
+        NewOffset = *IU.Offset + Offset.getSExtValue();
+      }
+      for (Use &U : GEP->uses()) {
+        Worklist.push_back({&U, NewOffset});
+      }
+      continue;
+    }
+
+    auto *I = cast<Instruction>(U);
+    auto *BB = I->getParent();
+    auto &BBInfo = UsesPerBlock.getOrInsertDefault(BB);
+    bool AlreadyVisitedInst = BBInfo.Insts.contains(I);
+    auto &IInfo = BBInfo.Insts[I];
+    bool AddedToBBInfo = false;
+
+    if (auto *SI = dyn_cast<StoreInst>(I)) {
+      bool StoringToPointer = &SI->getOperandUse(1) == IU.U;
+      IInfo = {StoringToPointer ? IU.Offset : std::nullopt, 0,
+               !StoringToPointer};
+      AddedToBBInfo = true;
+    } else if (auto *MemSet = dyn_cast<MemSetInst>(I)) {
+      IInfo = {MemSet->isVolatile() ? std::nullopt : IU.Offset, 0,
+               MemSet->isVolatile()};
+      AddedToBBInfo = true;
+    } else if (auto *MemCpy = dyn_cast<MemCpyInst>(I)) {
+      if (&MemCpy->getOperandUse(0) == IU.U) {
+        IInfo = {MemCpy->isVolatile() ? std::nullopt : IU.Offset, 0,
+                 MemCpy->isVolatile()};
+      } else {
+        IInfo = {std::nullopt, 0, true};
+      }
+      AddedToBBInfo = true;
+    } else if (auto *CB = dyn_cast<CallBase>(I)) {
+      if (CB->isArgOperand(IU.U)) {
+        unsigned ArgNo = CB->getArgOperandNo(IU.U);
+        bool IsInitialize = CB->paramHasAttr(ArgNo, Attribute::Initializes);
+        // Argument is only not clobbered when parameter is writeonly/readnone
+        // and nocapture.
+        bool IsClobber = !(CB->onlyWritesMemory(ArgNo) &&
+                           CB->paramHasAttr(ArgNo, Attribute::NoCapture));
+        IInfo = {IsInitialize ? IU.Offset : std::nullopt, ArgNo, IsClobber};
+      } else {
+        IInfo = {std::nullopt, 0, true};
+      }
+      AddedToBBInfo = true;
+    }
+    // Unrecognized instructions and instructions that have more than one use of
+    // the argument are considered clobbers.
+    if (!AddedToBBInfo || AlreadyVisitedInst) {
+      IInfo = {std::nullopt, 0, true};
+    }
+    BBInfo.HasClobber |= IInfo.IsClobber;
+    BBInfo.HasInitializes |= IInfo.Offset.has_value();
+
+    HasAnyInitialize |= IInfo.Offset.has_value();
+
+    if (IInfo.Offset.has_value() && BB != &EntryBB) {
+      HasInitializeOutsideEntryBB = true;
+    }
+  }
+
+  // No initialization anywhere in the function, bail.
+  if (!HasAnyInitialize) {
+    return false;
+  }
+
+  // TODO: a load doesn't clobber the entire range
+  DenseMap<const BasicBlock *, ConstantRangeList> Initialized;
+  auto VisitBlock = [&](const BasicBlock *BB) -> ConstantRangeList {
+    auto UPB = UsesPerBlock.find(BB);
+
+    // If this block has uses and none are initializes, the argument is not
+    // initialized in this block.
+    if (UPB != UsesPerBlock.end() && !UPB->second.HasInitializes) {
+      return ConstantRangeList();
+    }
+
+    ConstantRangeList CRL;
+
+    // Start with intersection of successors.
+    // If this block has any non-initializing use, we're going to clear out the
+    // ranges at some point in this block anyway, so don't bother looking at
+    // successors.
+    if (UPB == UsesPerBlock.end() || !UPB->second.HasClobber) {
+      bool HasAddedSuccessor = false;
+      for (auto *Succ : successors(BB)) {
+        if (auto SuccI = Initialized.find(Succ); SuccI != Initialized.end()) {
+          if (HasAddedSuccessor) {
+            CRL = CRL.intersectWith(SuccI->second);
+          } else {
+            CRL = SuccI->second;
+            HasAddedSuccessor = true;
+          }
+        } else {
+          CRL = ConstantRangeList();
+          break;
+        }
+      }
+    }
+
+    if (UPB != UsesPerBlock.end()) {
+      // Sort uses in this block by instruction order.
+      SmallVector<std::pair<Instruction *, InitializesInfo>, 2> Insts;
+      append_range(Insts, UPB->second.Insts);
+      sort(Insts, [](std::pair<Instruction *, InitializesInfo> &LHS,
+                     std::pair<Instruction *, InitializesInfo> &RHS) {
+        return LHS.first->comesBefore(RHS.first);
+      });
+
+      // From the end of the block to the beginning of the block, set
+      // initializes ranges.
+      for (auto [I, Info] : reverse(Insts)) {
+        if (Info.IsClobber) {
+          CRL = ConstantRangeList();
+        }
+        if (Info.Offset.has_value()) {
+          int64_t Offset = *Info.Offset;
+          if (auto *SI = dyn_cast<StoreInst>(I)) {
+            int64_t StoreSize = DL.getTypeStoreSize(SI->getAccessType());
+            CRL.insert(ConstantRange(APInt(64, Offset, true),
+                                     APInt(64, Offset + StoreSize, true)));
+          } else if (auto *MemSet = dyn_cast<MemSetInst>(I)) {
+            if (auto *Len = dyn_cast<ConstantInt>(MemSet->getLength())) {
+              CRL.insert(
+                  ConstantRange(APInt(64, Offset, true),
+                                APInt(64, Offset + Len->getSExtValue(), true)));
+            }
+          } else if (auto *MemCpy = dyn_cast<MemCpyInst>(I)) {
+            if (auto *Len = dyn_cast<ConstantInt>(MemCpy->getLength())) {
+              CRL.insert(
+                  ConstantRange(APInt(64, Offset, true),
+                                APInt(64, Offset + Len->getSExtValue(), true)));
+            }
+          } else if (auto *CB = dyn_cast<CallBase>(I)) {
+            assert(
+                CB->paramHasAttr(Info.CallBaseArgNo, Attribute::Initializes));
+            // FIXME: check callee in CB->getParamAttr
+            Attribute Attr =
+                CB->getParamAttr(Info.CallBaseArgNo, Attribute::Initializes);
+            if (!Attr.isValid()) {
+              Attr = CB->getCalledFunction()->getParamAttribute(
+                  Info.CallBaseArgNo, Attribute::Initializes);
+            }
+            ConstantRangeList CBCRL = Attr.getValueAsConstantRangeList();
+            for (ConstantRange &CR : CBCRL) {
+              CR =
+                  ConstantRange(CR.getLower() + Offset, CR.getUpper() + Offset);
+            }
+            CRL = CRL.unionWith(CBCRL);
+          }
+        }
+      }
+    }
+    return CRL;
+  };
+
+  ConstantRangeList EntryCRL;
+  // If all initializing instructions are in the EntryBB, or if the EntryBB has
+  // a clobbering use, we only need to look at EntryBB.
+  bool OnlyScanEntryBlock = !HasInitializeOutsideEntryBB;
+  if (!OnlyScanEntryBlock) {
+    if (auto EntryUPB = UsesPerBlock.find(&EntryBB);
+        EntryUPB != UsesPerBlock.end()) {
+      OnlyScanEntryBlock = EntryUPB->second.HasClobber;
+    }
+  }
+  if (OnlyScanEntryBlock) {
+    EntryCRL = VisitBlock(&EntryBB);
+    if (EntryCRL.empty()) {
+      return false;
+    }
+  } else {
+    // Visit successors before predecessors with a post-order walk of the blocks.
+    for (const BasicBlock *BB : post_order(&F)) {
+      ConstantRangeList CRL = VisitBlock(BB);
+      if (!CRL.empty()) {
+        Initialized[BB] = CRL;
+      }
+    }
+
+    auto EntryCRLI = Initialized.find(&EntryBB);
+    if (EntryCRLI == Initialized.end()) {
+      return false;
+    }
+
+    EntryCRL = EntryCRLI->second;
+  }
+
+  assert(!EntryCRL.empty() &&
+         "should have bailed already if EntryCRL is empty");
+
+  if (A.hasAttribute(Attribute::Initializes)) {
+    ConstantRangeList PreviousCRL =
+        A.getAttribute(Attribute::Initializes).getValueAsConstantRangeList();
+    if (PreviousCRL == EntryCRL) {
+      return false;
+    }
+    EntryCRL = EntryCRL.unionWith(PreviousCRL);
+  }
+
+  A.addAttr(Attribute::get(A.getContext(), Attribute::Initializes, EntryCRL));
+
+  return true;
+}
+
 /// Deduce nocapture attributes for the SCC.
 static void addArgumentAttrs(const SCCNodeSet &SCCNodes,
-                             SmallSet<Function *, 8> &Changed) {
+                             SmallSet<Function *, 8> &Changed,
+                             bool SkipInitializes) {
   ArgumentGraph AG;
 
   // Check each function in turn, determining which pointer arguments are not
@@ -935,6 +1186,10 @@ static void addArgumentAttrs(const SCCNodeSet &SCCNodes,
         if (R != Attribute::None)
           if (addAccessAttr(&A, R))
             Changed.insert(F);
+      }
+      if (!SkipInitializes && !A.onlyReadsMemory()) {
+        if (inferInitializes(A, *F))
+          Changed.insert(F);
       }
     }
   }
@@ -1839,13 +2094,13 @@ deriveAttrsInPostOrder(ArrayRef<Function *> Functions, AARGetterT &&AARGetter,
 
   SmallSet<Function *, 8> Changed;
   if (ArgAttrsOnly) {
-    addArgumentAttrs(Nodes.SCCNodes, Changed);
+    addArgumentAttrs(Nodes.SCCNodes, Changed, /*SkipInitializes=*/true);
     return Changed;
   }
 
   addArgumentReturnedAttrs(Nodes.SCCNodes, Changed);
   addMemoryAttrs(Nodes.SCCNodes, AARGetter, Changed);
-  addArgumentAttrs(Nodes.SCCNodes, Changed);
+  addArgumentAttrs(Nodes.SCCNodes, Changed, /*SkipInitializes=*/false);
   inferConvergent(Nodes.SCCNodes, Changed);
   addNoReturnAttrs(Nodes.SCCNodes, Changed);
   addWillReturn(Nodes.SCCNodes, Changed);
