@@ -1055,16 +1055,9 @@ static bool inferInitializes(Argument &A, Function &F) {
   };
 
   ConstantRangeList EntryCRL;
-  bool OnlyScanEntryBlock = false;
-  if (!OnlyScanEntryBlock) {
-    if (auto EntryUPB = UsesPerBlock.find(&EntryBB);
-        EntryUPB != UsesPerBlock.end()) {
-      OnlyScanEntryBlock = EntryUPB->second.HasClobber;
-    }
-  }
   // If the entry block has a non-initializing use, no need to look at any other
   // block.
-  if (OnlyScanEntryBlock) {
+  if (false) {
     EntryCRL = VisitBlock(&EntryBB);
     if (EntryCRL.empty()) {
       return false;
