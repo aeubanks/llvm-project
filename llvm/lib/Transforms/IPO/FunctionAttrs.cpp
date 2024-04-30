@@ -981,7 +981,7 @@ static bool inferInitializes(Argument &A, Function &F) {
     // If this block has any non-initializing use, we're going to clear out the
     // ranges at some point in this block anyway, so don't bother looking at
     // successors.
-    if (UPB == UsesPerBlock.end() || !UPB->second.HasClobber) {
+    // if (UPB == UsesPerBlock.end() || !UPB->second.HasClobber) {
       bool HasAddedSuccessor = false;
       for (auto *Succ : successors(BB)) {
         if (auto SuccI = Initialized.find(Succ); SuccI != Initialized.end()) {
@@ -996,7 +996,7 @@ static bool inferInitializes(Argument &A, Function &F) {
           break;
         }
       }
-    }
+    // }
 
     if (UPB != UsesPerBlock.end()) {
       // Sort uses in this block by instruction order.
