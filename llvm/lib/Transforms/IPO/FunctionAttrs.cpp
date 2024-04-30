@@ -1072,7 +1072,7 @@ static bool inferInitializes(Argument &A, Function &F) {
 
     auto EntryCRLI = Initialized.find(&EntryBB);
     if (EntryCRLI == Initialized.end()) {
-      return false;
+      return true;
     }
 
     EntryCRL = EntryCRLI->second;
@@ -1085,7 +1085,7 @@ static bool inferInitializes(Argument &A, Function &F) {
     ConstantRangeList PreviousCRL =
         A.getAttribute(Attribute::Initializes).getValueAsConstantRangeList();
     if (PreviousCRL == EntryCRL) {
-      return false;
+      return true;
     }
     EntryCRL = EntryCRL.unionWith(PreviousCRL);
   }
