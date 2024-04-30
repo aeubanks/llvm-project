@@ -971,9 +971,9 @@ static bool inferInitializes(Argument &A, Function &F) {
 
     // If this block has uses and none are initializes, the argument is not
     // initialized in this block.
-    if (UPB != UsesPerBlock.end() && !UPB->second.HasInitializes) {
-      return ConstantRangeList();
-    }
+    //if (UPB != UsesPerBlock.end() && !UPB->second.HasInitializes) {
+    //  return ConstantRangeList();
+    //}
 
     ConstantRangeList CRL;
 
