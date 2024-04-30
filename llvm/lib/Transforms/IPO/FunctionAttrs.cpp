@@ -895,7 +895,6 @@ static bool inferInitializes(Argument &A, Function &F) {
   }
 
   bool HasAnyInitialize = false;
-  bool HasInitializeOutsideEntryBB = false;
   auto PointerSize =
       DL.getIndexSizeInBits(A.getType()->getPointerAddressSpace());
   // No need for a visited set because we don't look through phis, so there are
@@ -966,10 +965,6 @@ static bool inferInitializes(Argument &A, Function &F) {
     BBInfo.HasInitializes |= IInfo.Offset.has_value();
 
     HasAnyInitialize |= IInfo.Offset.has_value();
-
-    if (IInfo.Offset.has_value() && BB != &EntryBB) {
-      HasInitializeOutsideEntryBB = true;
-    }
   }
 
   // No initialization anywhere in the function, bail.
@@ -1068,7 +1063,7 @@ static bool inferInitializes(Argument &A, Function &F) {
   };
 
   ConstantRangeList EntryCRL;
-  bool OnlyScanEntryBlock = !HasInitializeOutsideEntryBB;
+  bool OnlyScanEntryBlock = false;
   if (!OnlyScanEntryBlock) {
     if (auto EntryUPB = UsesPerBlock.find(&EntryBB);
         EntryUPB != UsesPerBlock.end()) {
