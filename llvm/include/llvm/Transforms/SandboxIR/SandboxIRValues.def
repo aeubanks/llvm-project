@@ -1,0 +1,95 @@
+//===- SandboxIRValues.def --------------------------------------*- C++ -*-===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
+// clang-format off
+
+//        ClassID,                        Class
+DEF_VALUE(Argument,                       SBArgument)
+DEF_VALUE(User,                           SBUser)
+DEF_VALUE(Block,                          SBBasicBlock)
+DEF_VALUE(Function,                       SBFunction)
+
+DEF_USER(Constant,                        SBConstant)
+// DEF_USER(Instruction,                  SBInstruction)
+
+//        ClassID,     Opcode(s),         Class
+DEF_INSTR(Opaque,      OP(Opaque),        SBOpaqueInstruction)
+DEF_INSTR(Insert,      OP(Insert),        SBInsertElementInstruction)
+DEF_INSTR(Extract,     OP(Extract),       SBExtractElementInstruction)
+DEF_INSTR(ShuffleVec,  OP(ShuffleVec),    SBShuffleVectorInstruction)
+DEF_INSTR(Store,       OP(Store),         SBStoreInstruction)
+DEF_INSTR(Load,        OP(Load),          SBLoadInstruction)
+DEF_INSTR(Ret,         OP(Ret),           SBReturnInstruction)
+DEF_INSTR(Call,        OP(Call),          SBCallInstruction)
+DEF_INSTR(GetElementPtr,OP(GetElementPtr),SBGetElementPtrInstruction)
+DEF_INSTR(Cast,        OPCODES(\
+                              OP(ZExt)     \
+                              OP(SExt)     \
+                              OP(FPToUI)   \
+                              OP(FPToSI)   \
+                              OP(FPExt)    \
+                              OP(PtrToInt) \
+                              OP(IntToPtr) \
+                              OP(SIToFP)   \
+                              OP(UIToFP)   \
+                              OP(Trunc)    \
+                              OP(FPTrunc)  \
+                              OP(BitCast)  \
+                              OP(AddrSpaceCast)  \
+                              ),          SBCastInstruction)
+DEF_INSTR(PHI,         OP(PHI),           SBPHINode)
+DEF_INSTR(Select,      OP(Select),        SBSelectInstruction)
+DEF_INSTR(BinOp,       OPCODES(\
+                               OP(Add)  \
+                               OP(FAdd) \
+                               OP(Sub)  \
+                               OP(FSub) \
+                               OP(Mul)  \
+                               OP(FMul) \
+                               OP(UDiv) \
+                               OP(SDiv) \
+                               OP(FDiv) \
+                               OP(URem) \
+                               OP(SRem) \
+                               OP(FRem) \
+                               OP(Shl)  \
+                               OP(LShr) \
+                               OP(AShr) \
+                               OP(And)  \
+                               OP(Or)   \
+                               OP(Xor)  \
+                               ),         SBBinaryOperator)
+DEF_INSTR(UnOp,        OPCODES(\
+                               OP(FNeg) \
+                               ),         SBUnaryOperator)
+DEF_INSTR(Cmp,         OPCODES(\
+                               OP(FCmp) \
+                               OP(ICmp) \
+                               ),         SBCmpInstruction)
+
+// Vector extensions
+DEF_INSTR(Pack,        OP(Pack),          SBPackInstruction)
+DEF_INSTR(Shuffle,     OP(Shuffle),       SBShuffleInstruction)
+DEF_INSTR(Unpack,      OP(Unpack),        SBUnpackInstruction)
+
+// clang-format on
+#ifdef DEF_VALUE
+#undef DEF_VALUE
+#endif
+#ifdef DEF_USER
+#undef DEF_USER
+#endif
+#ifdef DEF_INSTR
+#undef DEF_INSTR
+#endif
+#ifdef OPCODES
+#undef OPCODES
+#endif
+#ifdef OP
+#undef OP
+#endif
