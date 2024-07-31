@@ -534,6 +534,57 @@ public:
   pointer get() const { return getInstr(It); }
 };
 
+/// Contains a list of sandboxir::Instruction's.
+class BasicBlock : public Value {
+  /// Builds a graph that contains all values in \p BB in their original form
+  /// i.e., no vectorization is taking place here.
+  void buildBasicBlockFromLLVMIR(llvm::BasicBlock *LLVMBB);
+  friend class Context;     // For `buildBasicBlockFromIR`
+  friend class Instruction; // For LLVM Val.
+
+  BasicBlock(llvm::BasicBlock *BB, Context &SBCtx)
+      : Value(ClassID::Block, BB, SBCtx) {
+    buildBasicBlockFromLLVMIR(BB);
+  }
+
+public:
+  ~BasicBlock() = default;
+  /// For isa/dyn_cast.
+  static bool classof(const Value *From) {
+    return From->getSubclassID() == Value::ClassID::Block;
+  }
+  Function *getParent() const;
+  using iterator = BBIterator;
+  iterator begin() const;
+  iterator end() const {
+    auto *BB = cast<llvm::BasicBlock>(Val);
+    return iterator(BB, BB->end(), &Ctx);
+  }
+  std::reverse_iterator<iterator> rbegin() const {
+    return std::make_reverse_iterator(end());
+  }
+  std::reverse_iterator<iterator> rend() const {
+    return std::make_reverse_iterator(begin());
+  }
+  Context &getContext() const { return Ctx; }
+  Instruction *getTerminator() const;
+  bool empty() const { return begin() == end(); }
+  Instruction &front() const;
+  Instruction &back() const;
+
+#ifndef NDEBUG
+  void verify() const final {
+    assert(isa<llvm::BasicBlock>(Val) && "Expected BasicBlock!");
+  }
+  friend raw_ostream &operator<<(raw_ostream &OS, const BasicBlock &SBBB) {
+    SBBB.dump(OS);
+    return OS;
+  }
+  void dump(raw_ostream &OS) const final;
+  LLVM_DUMP_METHOD void dump() const final;
+#endif
+};
+
 /// A sandboxir::User with operands, opcode and linked with previous/next
 /// instructions in an instruction list.
 class Instruction : public sandboxir::User {
@@ -1378,125 +1429,40 @@ public:
 #endif
 };
 
-class FPToUIInst final : public CastInst {
+template <Instruction::Opcode O> class CastInstCRTP : public CastInst {
 public:
   static Value *create(Value *Src, Type *DestTy, BBIterator WhereIt,
                        BasicBlock *WhereBB, Context &Ctx,
-                       const Twine &Name = "");
+                       const Twine &Name = "") {
+    return CastInst::create(DestTy, O, Src, WhereIt, WhereBB, Ctx, Name);
+  }
   static Value *create(Value *Src, Type *DestTy, Instruction *InsertBefore,
-                       Context &Ctx, const Twine &Name = "");
+                       Context &Ctx, const Twine &Name = "") {
+    return create(Src, DestTy, InsertBefore->getIterator(),
+                  InsertBefore->getParent(), Ctx, Name);
+  }
   static Value *create(Value *Src, Type *DestTy, BasicBlock *InsertAtEnd,
-                       Context &Ctx, const Twine &Name = "");
+                       Context &Ctx, const Twine &Name = "") {
+    return create(Src, DestTy, InsertAtEnd->end(), InsertAtEnd, Ctx, Name);
+  }
 
   static bool classof(const Value *From) {
     if (auto *I = dyn_cast<Instruction>(From))
-      return I->getOpcode() == Opcode::FPToUI;
+      return I->getOpcode() == O;
     return false;
   }
-#ifndef NDEBUG
-  void dump(raw_ostream &OS) const final;
-  LLVM_DUMP_METHOD void dump() const final;
-#endif // NDEBUG
 };
 
-class FPToSIInst final : public CastInst {
-public:
-  static Value *create(Value *Src, Type *DestTy, BBIterator WhereIt,
-                       BasicBlock *WhereBB, Context &Ctx,
-                       const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, Instruction *InsertBefore,
-                       Context &Ctx, const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, BasicBlock *InsertAtEnd,
-                       Context &Ctx, const Twine &Name = "");
-
-  static bool classof(const Value *From) {
-    if (auto *I = dyn_cast<Instruction>(From))
-      return I->getOpcode() == Opcode::FPToSI;
-    return false;
-  }
-#ifndef NDEBUG
-  void dump(raw_ostream &OS) const final;
-  LLVM_DUMP_METHOD void dump() const final;
-#endif // NDEBUG
+class FPToUIInst final : public CastInstCRTP<Instruction::Opcode::FPToUI> {};
+class FPToSIInst final : public CastInstCRTP<Instruction::Opcode::FPToSI> {};
+class IntToPtrInst final : public CastInstCRTP<Instruction::Opcode::IntToPtr> {
 };
-
-class IntToPtrInst final : public CastInst {
-public:
-  static Value *create(Value *Src, Type *DestTy, BBIterator WhereIt,
-                       BasicBlock *WhereBB, Context &Ctx,
-                       const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, Instruction *InsertBefore,
-                       Context &Ctx, const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, BasicBlock *InsertAtEnd,
-                       Context &Ctx, const Twine &Name = "");
-
-  static bool classof(const Value *From) {
-    if (auto *I = dyn_cast<Instruction>(From))
-      return I->getOpcode() == Opcode::IntToPtr;
-    return false;
-  }
-#ifndef NDEBUG
-  void dump(raw_ostream &OS) const final;
-  LLVM_DUMP_METHOD void dump() const final;
-#endif // NDEBUG
+class PtrToIntInst final : public CastInstCRTP<Instruction::Opcode::PtrToInt> {
 };
-
-class PtrToIntInst final : public CastInst {
+class BitCastInst final : public CastInstCRTP<Instruction::Opcode::BitCast> {};
+class AddrSpaceCastInst final
+    : public CastInstCRTP<Instruction::Opcode::AddrSpaceCast> {
 public:
-  static Value *create(Value *Src, Type *DestTy, BBIterator WhereIt,
-                       BasicBlock *WhereBB, Context &Ctx,
-                       const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, Instruction *InsertBefore,
-                       Context &Ctx, const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, BasicBlock *InsertAtEnd,
-                       Context &Ctx, const Twine &Name = "");
-
-  static bool classof(const Value *From) {
-    return isa<Instruction>(From) &&
-           cast<Instruction>(From)->getOpcode() == Opcode::PtrToInt;
-  }
-#ifndef NDEBUG
-  void dump(raw_ostream &OS) const final;
-  LLVM_DUMP_METHOD void dump() const final;
-#endif // NDEBUG
-};
-
-class BitCastInst : public CastInst {
-public:
-  static Value *create(Value *Src, Type *DestTy, BBIterator WhereIt,
-                       BasicBlock *WhereBB, Context &Ctx,
-                       const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, Instruction *InsertBefore,
-                       Context &Ctx, const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, BasicBlock *InsertAtEnd,
-                       Context &Ctx, const Twine &Name = "");
-
-  static bool classof(const Value *From) {
-    if (auto *I = dyn_cast<Instruction>(From))
-      return I->getOpcode() == Instruction::Opcode::BitCast;
-    return false;
-  }
-#ifndef NDEBUG
-  void dump(raw_ostream &OS) const override;
-  LLVM_DUMP_METHOD void dump() const override;
-#endif
-};
-
-class AddrSpaceCastInst : public CastInst {
-public:
-  static Value *create(Value *Src, Type *DestTy, BBIterator WhereIt,
-                       BasicBlock *WhereBB, Context &Ctx,
-                       const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, Instruction *InsertBefore,
-                       Context &Ctx, const Twine &Name = "");
-  static Value *create(Value *Src, Type *DestTy, BasicBlock *InsertAtEnd,
-                       Context &Ctx, const Twine &Name = "");
-
-  static bool classof(const Value *From) {
-    if (auto *I = dyn_cast<Instruction>(From))
-      return I->getOpcode() == Opcode::AddrSpaceCast;
-    return false;
-  }
   /// \Returns the pointer operand.
   Value *getPointerOperand() { return getOperand(0); }
   /// \Returns the pointer operand.
@@ -1513,10 +1479,6 @@ public:
   unsigned getDestAddressSpace() const {
     return getType()->getPointerAddressSpace();
   }
-#ifndef NDEBUG
-  void dump(raw_ostream &OS) const override;
-  LLVM_DUMP_METHOD void dump() const override;
-#endif
 };
 
 /// An LLLVM Instruction that has no SandboxIR equivalent class gets mapped to
@@ -1553,57 +1515,6 @@ public:
   }
   void dump(raw_ostream &OS) const override;
   LLVM_DUMP_METHOD void dump() const override;
-#endif
-};
-
-/// Contains a list of sandboxir::Instruction's.
-class BasicBlock : public Value {
-  /// Builds a graph that contains all values in \p BB in their original form
-  /// i.e., no vectorization is taking place here.
-  void buildBasicBlockFromLLVMIR(llvm::BasicBlock *LLVMBB);
-  friend class Context;     // For `buildBasicBlockFromIR`
-  friend class Instruction; // For LLVM Val.
-
-  BasicBlock(llvm::BasicBlock *BB, Context &SBCtx)
-      : Value(ClassID::Block, BB, SBCtx) {
-    buildBasicBlockFromLLVMIR(BB);
-  }
-
-public:
-  ~BasicBlock() = default;
-  /// For isa/dyn_cast.
-  static bool classof(const Value *From) {
-    return From->getSubclassID() == Value::ClassID::Block;
-  }
-  Function *getParent() const;
-  using iterator = BBIterator;
-  iterator begin() const;
-  iterator end() const {
-    auto *BB = cast<llvm::BasicBlock>(Val);
-    return iterator(BB, BB->end(), &Ctx);
-  }
-  std::reverse_iterator<iterator> rbegin() const {
-    return std::make_reverse_iterator(end());
-  }
-  std::reverse_iterator<iterator> rend() const {
-    return std::make_reverse_iterator(begin());
-  }
-  Context &getContext() const { return Ctx; }
-  Instruction *getTerminator() const;
-  bool empty() const { return begin() == end(); }
-  Instruction &front() const;
-  Instruction &back() const;
-
-#ifndef NDEBUG
-  void verify() const final {
-    assert(isa<llvm::BasicBlock>(Val) && "Expected BasicBlock!");
-  }
-  friend raw_ostream &operator<<(raw_ostream &OS, const BasicBlock &SBBB) {
-    SBBB.dump(OS);
-    return OS;
-  }
-  void dump(raw_ostream &OS) const final;
-  LLVM_DUMP_METHOD void dump() const final;
 #endif
 };
 
