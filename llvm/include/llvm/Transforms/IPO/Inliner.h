@@ -34,9 +34,10 @@ namespace llvm {
 /// passes be composed to achieve the same end result.
 class InlinerPass : public PassInfoMixin<InlinerPass> {
 public:
-  InlinerPass(bool OnlyMandatory = false,
+  InlinerPass(bool OnlyMandatory = false, bool OnlyDiscardable = false,
               ThinOrFullLTOPhase LTOPhase = ThinOrFullLTOPhase::None)
-      : OnlyMandatory(OnlyMandatory), LTOPhase(LTOPhase) {}
+      : OnlyMandatory(OnlyMandatory), OnlyDiscardable(OnlyDiscardable),
+        LTOPhase(LTOPhase) {}
   InlinerPass(InlinerPass &&Arg) = default;
 
   PreservedAnalyses run(LazyCallGraph::SCC &C, CGSCCAnalysisManager &AM,
@@ -50,6 +51,7 @@ private:
                             FunctionAnalysisManager &FAM, Module &M);
   std::unique_ptr<InlineAdvisor> OwnedAdvisor;
   const bool OnlyMandatory;
+  const bool OnlyDiscardable;
   const ThinOrFullLTOPhase LTOPhase;
 };
 
