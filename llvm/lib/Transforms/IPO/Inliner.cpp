@@ -614,6 +614,8 @@ PreservedAnalyses ModuleInlinerWrapperPass::run(Module &M,
     return PreservedAnalyses::all();
   }
 
+  MPM.addPass(createModuleToPostOrderCGSCCPassAdaptor(InlinerPass()));
+
   // We wrap the CGSCC pipeline in a devirtualization repeater. This will try
   // to detect when we devirtualize indirect calls and iterate the SCC passes
   // in that case to try and catch knock-on inlining or function attrs
