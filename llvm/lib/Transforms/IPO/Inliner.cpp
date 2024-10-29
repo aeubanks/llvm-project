@@ -364,8 +364,7 @@ PreservedAnalyses InlinerPass::run(LazyCallGraph::SCC &InitialC,
         continue;
       }
 
-      std::unique_ptr<InlineAdvice> Advice =
-          Advisor.getAdvice(*CB, OnlyMandatory);
+      std::unique_ptr<InlineAdvice> Advice = Advisor.getAdvice(*CB, false);
 
       // Check whether we want to inline this callsite.
       if (!Advice)
@@ -593,11 +592,6 @@ ModuleInlinerWrapperPass::ModuleInlinerWrapperPass(InlineParams Params,
   // into the callers so that our optimizations can reflect that.
   // For PreLinkThinLTO pass, we disable hot-caller heuristic for sample PGO
   // because it makes profile annotation in the backend inaccurate.
-  if (MandatoryFirst) {
-    PM.addPass(InlinerPass(/*OnlyMandatory*/ true));
-    if (EnablePostSCCAdvisorPrinting)
-      PM.addPass(InlineAdvisorAnalysisPrinterPass(dbgs()));
-  }
   PM.addPass(InlinerPass());
   if (EnablePostSCCAdvisorPrinting)
     PM.addPass(InlineAdvisorAnalysisPrinterPass(dbgs()));
@@ -618,8 +612,7 @@ PreservedAnalyses ModuleInlinerWrapperPass::run(Module &M,
     return PreservedAnalyses::all();
   }
 
-  MPM.addPass(
-      createModuleToPostOrderCGSCCPassAdaptor(InlinerPass(false, true)));
+  MPM.addPass(createModuleToPostOrderCGSCCPassAdaptor(InlinerPass(true)));
 
   // We wrap the CGSCC pipeline in a devirtualization repeater. This will try
   // to detect when we devirtualize indirect calls and iterate the SCC passes
@@ -649,8 +642,6 @@ void InlinerPass::printPipeline(
     raw_ostream &OS, function_ref<StringRef(StringRef)> MapClassName2PassName) {
   static_cast<PassInfoMixin<InlinerPass> *>(this)->printPipeline(
       OS, MapClassName2PassName);
-  if (OnlyMandatory)
-    OS << "<only-mandatory>";
 }
 
 void ModuleInlinerWrapperPass::printPipeline(
