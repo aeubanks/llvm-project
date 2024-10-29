@@ -335,6 +335,10 @@ PreservedAnalyses InlinerPass::run(LazyCallGraph::SCC &InitialC,
       const int InlineHistoryID = P.second;
       Function &Callee = *CB->getCalledFunction();
 
+      if (OnlyDiscardable && !Callee.isDiscardableIfUnused()) {
+        continue;
+      }
+
       if (InlineHistoryID != -1 &&
           inlineHistoryIncludes(&Callee, InlineHistoryID, InlineHistory)) {
         LLVM_DEBUG(dbgs() << "Skipping inlining due to history: " << F.getName()
@@ -614,7 +618,8 @@ PreservedAnalyses ModuleInlinerWrapperPass::run(Module &M,
     return PreservedAnalyses::all();
   }
 
-  MPM.addPass(createModuleToPostOrderCGSCCPassAdaptor(InlinerPass()));
+  MPM.addPass(
+      createModuleToPostOrderCGSCCPassAdaptor(InlinerPass(false, true)));
 
   // We wrap the CGSCC pipeline in a devirtualization repeater. This will try
   // to detect when we devirtualize indirect calls and iterate the SCC passes
