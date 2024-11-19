@@ -197,7 +197,7 @@ static cl::opt<bool>
                 cl::desc("Display the SLP trees with Graphviz"));
 
 static cl::opt<bool> VectorizeNonPowerOf2(
-    "slp-vectorize-non-power-of-2", cl::init(false), cl::Hidden,
+    "slp-vectorize-non-power-of-2", cl::init(true), cl::Hidden,
     cl::desc("Try to vectorize with non-power-of-2 number of elements."));
 
 // Limit the number of alias checks. The limit is chosen so that
