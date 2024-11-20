@@ -194,6 +194,9 @@ template <> struct DenseMapInfo<GVNPass::Expression> {
 /// implicitly associated with a rematerialization point which is the
 /// location of the instruction from which it was formed.
 struct llvm::gvn::AvailableValue {
+  void dump() {
+    errs() << "AvailableValue: " << (int)Kind << ": " << *Val<< "\n";
+  }
   enum class ValType {
     SimpleVal, // A simple offsetted value that is accessed.
     LoadVal,   // A value produced by a load.
@@ -1966,6 +1969,15 @@ bool GVNPass::processNonLocalLoad(LoadInst *Load) {
 
     // Perform PHI construction.
     Value *V = ConstructSSAForLoadSet(Load, ValuesPerBlock, *this);
+
+    // errs() << "---------\n";
+    // for (auto&VPB:ValuesPerBlock) {
+    //   errs() << VPB.BB->getName() << "\n";
+    //   VPB.AV.dump();
+    // }
+    // Load->dump();
+    // V->dump();
+
     // ConstructSSAForLoadSet is responsible for combining metadata.
     ICF->removeUsersOf(Load);
     Load->replaceAllUsesWith(V);

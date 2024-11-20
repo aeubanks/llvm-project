@@ -1057,6 +1057,7 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
 
   // Get the NLPI for CacheKey, inserting one into the map if it doesn't
   // already have one.
+  // NonLocalPointerDeps.erase(CacheKey);
   std::pair<CachedNonLocalPointerInfo::iterator, bool> Pair =
       NonLocalPointerDeps.insert(std::make_pair(CacheKey, InitialNLPI));
   NonLocalPointerInfo *CacheInfo = &Pair.first->second;
@@ -1065,22 +1066,23 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
   // work to reconcile the cache entry and the current query.
   // Invariant loads don't participate in caching. Thus no need to reconcile.
   if (!isInvariantLoad && !Pair.second) {
+    // errs() << "Cache " << CacheInfo->Size << " " << Loc.Size << "\n";
     if (CacheInfo->Size != Loc.Size) {
-      bool ThrowOutEverything;
-      if (CacheInfo->Size.hasValue() && Loc.Size.hasValue()) {
-        // FIXME: We may be able to do better in the face of results with mixed
-        // precision. We don't appear to get them in practice, though, so just
-        // be conservative.
-        ThrowOutEverything =
-            CacheInfo->Size.isPrecise() != Loc.Size.isPrecise() ||
-            !TypeSize::isKnownGE(CacheInfo->Size.getValue(),
-                                 Loc.Size.getValue());
-      } else {
-        // For our purposes, unknown size > all others.
-        ThrowOutEverything = !Loc.Size.hasValue();
-      }
+      // bool ThrowOutEverything;
+      // if (CacheInfo->Size.hasValue() && Loc.Size.hasValue()) {
+      //   // FIXME: We may be able to do better in the face of results with mixed
+      //   // precision. We don't appear to get them in practice, though, so just
+      //   // be conservative.
+      //   ThrowOutEverything =
+      //       CacheInfo->Size.isPrecise() != Loc.Size.isPrecise() ||
+      //       !TypeSize::isKnownGE(CacheInfo->Size.getValue(),
+      //                            Loc.Size.getValue());
+      // } else {
+      //   // For our purposes, unknown size > all others.
+      //   ThrowOutEverything = !Loc.Size.hasValue();
+      // }
 
-      if (ThrowOutEverything) {
+      // if (ThrowOutEverything) {
         // The query's Size is greater than the cached one. Throw out the
         // cached data and proceed with the query at the greater size.
         CacheInfo->Pair = BBSkipFirstBlockPair();
@@ -1093,13 +1095,13 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
         // information about blocks we have already visited. We therefore must
         // assume that the cache information is incomplete.
         IsIncomplete = true;
-      } else {
-        // This query's Size is less than the cached one. Conservatively restart
-        // the query using the greater size.
-        return getNonLocalPointerDepFromBB(
-            QueryInst, Pointer, Loc.getWithNewSize(CacheInfo->Size), isLoad,
-            StartBB, Result, Visited, SkipFirstBlock, IsIncomplete);
-      }
+      // } else {
+      //   // This query's Size is less than the cached one. Conservatively restart
+      //   // the query using the greater size.
+      //   return getNonLocalPointerDepFromBB(
+      //       QueryInst, Pointer, Loc.getWithNewSize(CacheInfo->Size), isLoad,
+      //       StartBB, Result, Visited, SkipFirstBlock, IsIncomplete);
+      // }
     }
 
     // If the query's AATags are inconsistent with the cached one,
