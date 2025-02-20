@@ -444,7 +444,8 @@ Sections:
   ASSERT_EQ((*SymtabSecOrErr)->sh_type, ELF::SHT_SYMTAB);
 
   auto DoCheck = [&](unsigned BrokenSymIndex, const char *ErrMsg) {
-    ELFSymbolRef BrokenSym = Obj.toSymbolRef(*SymtabSecOrErr, BrokenSymIndex);
+    ELFSymbolRef BrokenSym =
+        Obj.toSymbolRef(*SymtabSecOrErr, 1, BrokenSymIndex);
 
     // 1) Check the behavior of ELFObjectFile<ELFT>::getSymbolName().
     //    SymbolRef::getName() calls it internally. We can't test it directly,

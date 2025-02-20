@@ -144,7 +144,7 @@ RelsOrRelas<ELFT> InputSectionBase::relsOrRelas(bool supportsCrel) const {
     return {};
   RelsOrRelas<ELFT> ret;
   auto *f = cast<ObjFile<ELFT>>(file);
-  typename ELFT::Shdr shdr = f->template getELFShdrs<ELFT>()[relSecIdx];
+  typename ELFT::Shdr shdr = check(f->getObj().sections())[relSecIdx];
   if (shdr.sh_type == SHT_CREL) {
     // Return an iterator if supported by caller.
     if (supportsCrel) {
@@ -510,7 +510,7 @@ void InputSection::copyRelocations(Ctx &ctx, uint8_t *buf,
             sec->name != ".gcc_except_table" && sec->name != ".got2" &&
             sec->name != ".toc") {
           uint32_t secIdx = cast<Undefined>(sym).discardedSecIdx;
-          Elf_Shdr_Impl<ELFT> sec = file->template getELFShdrs<ELFT>()[secIdx];
+          Elf_Shdr_Impl<ELFT> sec = check(file->getObj().sections())[secIdx];
           Warn(ctx) << "relocation refers to a discarded section: "
                     << CHECK2(file->getObj().getSectionName(sec), file)
                     << "\n>>> referenced by " << getObjMsg(p->r_offset);

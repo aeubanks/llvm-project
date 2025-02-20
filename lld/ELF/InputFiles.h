@@ -202,10 +202,6 @@ public:
                                      numSymbols - firstGlobal);
   }
 
-  template <typename ELFT> typename ELFT::ShdrRange getELFShdrs() const {
-    return typename ELFT::ShdrRange(
-        reinterpret_cast<const typename ELFT::Shdr *>(elfShdrs), numELFShdrs);
-  }
   template <typename ELFT> typename ELFT::SymRange getELFSyms() const {
     return typename ELFT::SymRange(
         reinterpret_cast<const typename ELFT::Sym *>(elfSyms), numSymbols);

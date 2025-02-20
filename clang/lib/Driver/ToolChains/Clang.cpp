@@ -2595,6 +2595,7 @@ static void CollectArgsForIntegratedAssembler(Compilation &C,
   const llvm::Triple &Triple = C.getDefaultToolChain().getTriple();
   bool IsELF = Triple.isOSBinFormatELF();
   bool Crel = false, ExperimentalCrel = false;
+  bool Cshdr = false;
   bool ImplicitMapSyms = false;
   bool UseRelaxRelocations = C.getDefaultToolChain().useRelaxRelocations();
   bool UseNoExecStack = false;
@@ -2792,6 +2793,10 @@ static void CollectArgsForIntegratedAssembler(Compilation &C,
         Crel = true;
       } else if (Value == "--no-crel") {
         Crel = false;
+      } else if (Value == "--cshdr") {
+        Cshdr = true;
+      } else if (Value == "--no-cshdr") {
+        Cshdr = false;
       } else if (Value == "--allow-experimental-crel") {
         ExperimentalCrel = true;
       } else if (Value.starts_with("-I")) {
@@ -2861,6 +2866,14 @@ static void CollectArgsForIntegratedAssembler(Compilation &C,
     } else {
       D.Diag(diag::err_drv_unsupported_opt_for_target)
           << "-Wa,--crel" << D.getTargetTriple();
+    }
+  }
+  if (Cshdr) {
+    if (Triple.isOSBinFormatELF() && !Triple.isMIPS()) {
+      CmdArgs.push_back("--cshdr");
+    } else {
+      D.Diag(diag::err_drv_unsupported_opt_for_target)
+          << "-Wa,--cshdr" << D.getTargetTriple();
     }
   }
   if (ImplicitMapSyms)

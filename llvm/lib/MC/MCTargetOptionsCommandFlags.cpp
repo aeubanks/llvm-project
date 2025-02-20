@@ -48,6 +48,7 @@ MCOPT(bool, NoDeprecatedWarn)
 MCOPT(bool, NoTypeCheck)
 MCOPT(bool, SaveTempLabels)
 MCOPT(bool, Crel)
+MCOPT(bool, Cshdr)
 MCOPT(bool, ImplicitMapSyms)
 MCOPT(bool, X86RelaxRelocations)
 MCOPT(bool, X86Sse2Avx)
@@ -134,6 +135,8 @@ llvm::mc::RegisterMCTargetOptionsFlags::RegisterMCTargetOptionsFlags() {
   static cl::opt<bool> Crel("crel",
                             cl::desc("Use CREL relocation format for ELF"));
   MCBINDOPT(Crel);
+  static cl::opt<bool> Cshdr("cshdr", cl::desc(""));
+  MCBINDOPT(Cshdr);
 
   static cl::opt<bool> ImplicitMapSyms(
       "implicit-mapsyms",
@@ -183,6 +186,7 @@ MCTargetOptions llvm::mc::InitMCTargetOptionsFromFlags() {
   Options.MCNoTypeCheck = getNoTypeCheck();
   Options.MCSaveTempLabels = getSaveTempLabels();
   Options.Crel = getCrel();
+  Options.Cshdr = getCshdr();
   Options.ImplicitMapSyms = getImplicitMapSyms();
   Options.X86RelaxRelocations = getX86RelaxRelocations();
   Options.X86Sse2Avx = getX86Sse2Avx();

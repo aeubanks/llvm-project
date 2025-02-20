@@ -991,7 +991,7 @@ processCallGraphRelocations(Ctx &ctx, SmallVector<uint32_t, 32> &symbolIndices,
     return false;
 
   ArrayRef<Elf_Shdr_Impl<ELFT>> objSections =
-      inputObj->template getELFShdrs<ELFT>();
+      check(inputObj->getObj().sections());
   symbolIndices.clear();
   const ELFFile<ELFT> &obj = inputObj->getObj();
   cgProfile =

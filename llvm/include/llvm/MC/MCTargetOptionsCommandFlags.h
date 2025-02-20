@@ -53,6 +53,8 @@ bool getSaveTempLabels();
 
 bool getCrel();
 
+bool getCshdr();
+
 bool getImplicitMapSyms();
 
 bool getX86RelaxRelocations();

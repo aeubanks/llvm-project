@@ -550,7 +550,7 @@ template <class ELFT> void ObjFile<ELFT>::parse(bool ignoreComdats) {
 
   // Handle dependent libraries and selection of section groups as these are not
   // done in parallel.
-  ArrayRef<Elf_Shdr> objSections = getELFShdrs<ELFT>();
+  ArrayRef<Elf_Shdr> objSections = check(obj.sections());
   StringRef shstrtab = CHECK2(obj.getSectionStringTable(objSections), this);
   uint64_t size = objSections.size();
   sections.resize(size);
@@ -742,7 +742,7 @@ static bool isKnownSpecificSectionType(uint32_t t, uint32_t flags) {
 template <class ELFT>
 void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
                                        const llvm::object::ELFFile<ELFT> &obj) {
-  ArrayRef<Elf_Shdr> objSections = getELFShdrs<ELFT>();
+  ArrayRef<Elf_Shdr> objSections = check(obj.sections());
   StringRef shstrtab = CHECK2(obj.getSectionStringTable(objSections), this);
   uint64_t size = objSections.size();
   SmallVector<ArrayRef<Elf_Word>, 0> selectedGroups;
@@ -1457,7 +1457,7 @@ template <class ELFT> void SharedFile::parse() {
 
   ArrayRef<Elf_Dyn> dynamicTags;
   const ELFFile<ELFT> obj = this->getObj<ELFT>();
-  ArrayRef<Elf_Shdr> sections = getELFShdrs<ELFT>();
+  ArrayRef<Elf_Shdr> sections = check(obj.sections());
 
   const Elf_Shdr *versymSec = nullptr;
   const Elf_Shdr *verdefSec = nullptr;

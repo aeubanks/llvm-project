@@ -63,6 +63,7 @@ public:
 
   // Use CREL relocation format for ELF.
   bool Crel = false;
+  bool Cshdr = false;
 
   bool ImplicitMapSyms = false;
 

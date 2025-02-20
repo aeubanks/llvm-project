@@ -388,6 +388,7 @@ protected:
   const Elf_Hash *HashTable = nullptr;
   const Elf_GnuHash *GnuHashTable = nullptr;
   const Elf_Shdr *DotSymtabSec = nullptr;
+  unsigned DotSymtabSecNum = -1;
   const Elf_Shdr *DotDynsymSec = nullptr;
   const Elf_Shdr *DotAddrsigSec = nullptr;
   DenseMap<const Elf_Shdr *, ArrayRef<Elf_Word>> ShndxTables;
@@ -1936,11 +1937,13 @@ ELFDumper<ELFT>::ELFDumper(const object::ELFObjectFile<ELFT> &O,
     return;
 
   typename ELFT::ShdrRange Sections = cantFail(Obj.sections());
-  for (const Elf_Shdr &Sec : Sections) {
+  for (const auto &[i, Sec] : enumerate(Sections)) {
     switch (Sec.sh_type) {
     case ELF::SHT_SYMTAB:
-      if (!DotSymtabSec)
+      if (!DotSymtabSec) {
         DotSymtabSec = &Sec;
+        DotSymtabSecNum = i;
+      }
       break;
     case ELF::SHT_DYNSYM:
       if (!DotDynsymSec)
@@ -6628,7 +6631,8 @@ SmallVector<uint32_t> ELFDumper<ELFT>::getSymbolIndexesForFunctionAddress(
             continue;
 
           Expected<uint64_t> SymAddrOrErr =
-              ObjF.toSymbolRef(this->DotSymtabSec, Index).getAddress();
+              ObjF.toSymbolRef(this->DotSymtabSec, this->DotSymtabSecNum, Index)
+                  .getAddress();
           if (!SymAddrOrErr) {
             std::string Name = this->getStaticSymbolName(Index);
             reportUniqueWarning("unable to get address of symbol '" + Name +

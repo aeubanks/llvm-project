@@ -24,6 +24,7 @@
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/DataExtractor.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/LEB128.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -270,7 +271,7 @@ public:
 
 private:
   StringRef Buf;
-  std::vector<Elf_Shdr> FakeSections;
+  mutable std::vector<Elf_Shdr> FakeSections;
   SmallString<0> FakeSectionStrings;
 
   ELFFile(StringRef Object);
@@ -930,6 +931,63 @@ Expected<typename ELFT::ShdrRange> ELFFile<ELFT>::sections() const {
     return ArrayRef<Elf_Shdr>();
   }
 
+  // Invalid address alignment of section headers
+  if (SectionTableOffset & (alignof(Elf_Shdr) - 1))
+    // TODO: this error is untested.
+    return createError("invalid alignment of section headers");
+
+  uint32_t NumSections = getHeader().e_shnum;
+  if (getHeader().e_version == 2) {
+    if (getHeader().e_shentsize != 0)
+      return createError("Expected e_shentsize == 0 for compact section headers");
+
+    if (FakeSections.empty()) {
+      auto *p = reinterpret_cast<const uint8_t *>(base() + SectionTableOffset);
+      auto ParseCshdr = [this, &p]() -> Expected<Elf_Shdr> {
+        const char *Err = nullptr;
+        Elf_Shdr Shdr = {};
+        uint8_t Presence = *p++;
+        Shdr.sh_name = decodeULEB128AndInc(p, end(), &Err);
+        Shdr.sh_type = Presence & 1 ? decodeULEB128AndInc(p, end(), &Err)
+                                    : ELF::SHT_PROGBITS;
+        Shdr.sh_flags = Presence & 2 ? decodeULEB128AndInc(p, end(), &Err) : 0;
+        Shdr.sh_addr = Presence & 4 ? decodeULEB128AndInc(p, end(), &Err) : 0;
+        Shdr.sh_offset = decodeULEB128AndInc(p, end(), &Err);
+        Shdr.sh_size = Presence & 8 ? decodeULEB128AndInc(p, end(), &Err) : 0;
+        Shdr.sh_link = Presence & 16 ? decodeULEB128AndInc(p, end(), &Err) : 0;
+        Shdr.sh_info = Presence & 32 ? decodeULEB128AndInc(p, end(), &Err) : 0;
+        Shdr.sh_addralign =
+            Presence & 64 ? uintX_t(1) << decodeULEB128AndInc(p, end(), &Err)
+                          : 1;
+        Shdr.sh_entsize =
+            Presence & 128 ? decodeULEB128AndInc(p, end(), &Err) : 0;
+        if (Err)
+          return createError("invalid compact section header");
+        return Shdr;
+      };
+      auto FirstShdr = ParseCshdr();
+      if (FirstShdr)
+        FakeSections.push_back(*FirstShdr);
+      else
+        return FirstShdr;
+      // If e_shnum == 0, find the number of sections as sh_size in the first
+      // section.
+      if (NumSections == 0) {
+        NumSections = FirstShdr->sh_size;
+        if (NumSections == 0)
+          return createError(
+              "Expected non-zero sh_size in first section for e_shentsize == 0");
+      }
+      for (uint32_t i = 1; i != NumSections; ++i) {
+        auto Shdr = ParseCshdr();
+        if (!Shdr)
+          return Shdr;
+        FakeSections.push_back(*Shdr);
+      }
+    }
+    return FakeSections;
+  }
+
   if (getHeader().e_shentsize != sizeof(Elf_Shdr))
     return createError("invalid e_shentsize in ELF header: " +
                        Twine(getHeader().e_shentsize));
@@ -941,15 +999,9 @@ Expected<typename ELFT::ShdrRange> ELFFile<ELFT>::sections() const {
         "section header table goes past the end of the file: e_shoff = 0x" +
         Twine::utohexstr(SectionTableOffset));
 
-  // Invalid address alignment of section headers
-  if (SectionTableOffset & (alignof(Elf_Shdr) - 1))
-    // TODO: this error is untested.
-    return createError("invalid alignment of section headers");
-
   const Elf_Shdr *First =
       reinterpret_cast<const Elf_Shdr *>(base() + SectionTableOffset);
 
-  uintX_t NumSections = getHeader().e_shnum;
   if (NumSections == 0)
     NumSections = First->sh_size;
 
