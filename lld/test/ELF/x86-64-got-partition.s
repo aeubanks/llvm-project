@@ -10,10 +10,10 @@
 # REQUIRES: x86
 # RUN: split-file %s %t
 # RUN: llvm-mc -filetype=obj -triple=x86_64 %t/test.s -o %t/test.o
-# RUN: ld.lld -T %t/lds -pie %t/test.o -o %t.exe -Map=%t.map
+# RUN: ld.lld --fatal-warnings -T %t/lds -pie %t/test.o -o %t.exe -Map=%t.map
 # RUN: llvm-objdump --no-print-imm-hex -d %t.exe | FileCheck %s --check-prefix=DISASM
 # RUN: FileCheck %s --check-prefix=MAP < %t.map
-# RUN: ld.lld -T %t/lds %t/test.o -o %t.nopie
+# RUN: ld.lld --fatal-warnings -T %t/lds %t/test.o -o %t.nopie
 # RUN: llvm-readelf -x .got.ltext.0 %t.nopie | FileCheck %s --check-prefix=HEX-NOPIE
 
 # DISASM:      Disassembly of section .ltext:
