@@ -428,6 +428,7 @@ struct Config {
   bool warnCommon;
   bool warnMissingEntry;
   bool warnSymbolOrdering;
+  bool warnLarge;
   bool writeAddends;
   bool zCombreloc;
   bool zCopyreloc;
@@ -764,6 +765,8 @@ struct Ctx : CommonLinkerContext {
   // True if all native vtable symbols have corresponding type info symbols
   // during LTO.
   bool ltoAllVtablesHaveTypeInfos = false;
+  // True if any output section has the SHF_X86_64_LARGE flag set.
+  bool hasLargeSection = false;
   // Number of Vernaux entries (needed shared object names).
   uint32_t vernauxNum = 0;
 

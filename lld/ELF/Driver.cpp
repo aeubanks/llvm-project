@@ -1640,6 +1640,7 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
   ctx.arg.warnCommon = args.hasFlag(OPT_warn_common, OPT_no_warn_common, false);
   ctx.arg.warnSymbolOrdering =
       args.hasFlag(OPT_warn_symbol_ordering, OPT_no_warn_symbol_ordering, true);
+  ctx.arg.warnLarge = args.hasFlag(OPT_warn_large, OPT_no_warn_large, true);
   ctx.arg.whyExtract = args.getLastArgValue(OPT_why_extract);
   for (opt::Arg *arg : args.filtered(OPT_why_live)) {
     StringRef value(arg->getValue());
