@@ -2173,8 +2173,11 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
   // Fill other section headers. The dynamic table is finalized
   // at the end because some tags like RELSZ depend on result
   // of finalizing other sections.
-  for (OutputSection *sec : ctx.outputSections)
+  for (OutputSection *sec : ctx.outputSections) {
     sec->finalize(ctx);
+    if (sec->flags & SHF_X86_64_LARGE)
+      ctx.hasLargeSection = true;
+  }
 
   ctx.script->checkFinalScriptConditions();
 

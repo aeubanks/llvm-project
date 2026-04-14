@@ -11,7 +11,7 @@
 
 # REQUIRES: x86
 # RUN: llvm-mc -filetype=obj -triple=x86_64 %s -o %t.o
-# RUN: ld.lld -pie --got-partition-threshold=16384 -z max-page-size=4096 %t.o -o %t.exe -Map=%t.map
+# RUN: ld.lld --fatal-warnings -pie --got-partition-threshold=16384 -z max-page-size=4096 %t.o -o %t.exe -Map=%t.map
 # RUN: llvm-objdump --no-print-imm-hex -d %t.exe | FileCheck %s --check-prefix=DISASM
 # RUN: FileCheck %s --check-prefix=MAP < %t.map
 # RUN: llvm-readelf -l %t.exe | FileCheck %s --check-prefix=PHDR
