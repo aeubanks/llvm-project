@@ -32,9 +32,8 @@
 # SHARED-NEXT:   callq *(%rax)
 # SHARED-NEXT:   movl %fs:(%rax), %eax
 
-# SHARED-NOT:  .got PROGBITS
 # SHARED:      .got.ltext.0 PROGBITS [[#%.16x, GOT_FOO]] {{.*}} 000038
-# SHARED-NOT:  .got PROGBITS
+# SHARED:      .got PROGBITS {{.*}} 000000
 # SHARED:      Relocation section '.rela.dyn' {{.*}} contains 5 entries:
 # SHARED:      [[#%.16x, GOT_LD]]      {{.*}} R_X86_64_DTPMOD64 0
 # SHARED-NEXT: [[#%.16x, GOT_FOO]]     {{.*}} R_X86_64_TPOFF64  {{.*}} foo + 0
@@ -57,9 +56,8 @@
 # EXEC-NEXT:   nop
 # EXEC-NEXT:   movl %fs:(%rax), %eax
 
-# EXEC-NOT:  .got
 # EXEC:      .got.ltext.0 PROGBITS [[#%.16x, GOT_BAR]] {{.*}} 000010
-# EXEC-NOT:  .got
+# EXEC:      .got PROGBITS {{.*}} 000000
 # EXEC:      Relocation section '.rela.dyn' {{.*}} contains 2 entries:
 # EXEC:      [[#%.16x, GOT_BAR]] {{.*}} R_X86_64_TPOFF64 {{.*}} bar + 0
 # EXEC-NEXT: [[#%.16x, GOT_QUX]] {{.*}} R_X86_64_TPOFF64 {{.*}} qux + 0

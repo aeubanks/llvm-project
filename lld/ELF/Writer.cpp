@@ -1534,9 +1534,10 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
   // the final addresses are unavailable.
   uint32_t pass = 0, assignPasses = 0;
   while (!ctx.arg.relocatable) {
-    bool changed = ctx.target->needsThunks
-                       ? tc.createThunks(pass, ctx.outputSections)
-                       : ctx.target->relaxOnce(pass);
+    bool changed = false;
+    if (ctx.target->needsThunks)
+      changed |= tc.createThunks(pass, ctx.outputSections);
+    changed |= ctx.target->relaxOnce(pass);
     bool spilled = ctx.script->spillSections();
     changed |= spilled;
     ++pass;
@@ -1592,6 +1593,7 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
       changed |= ctx.in.relrDyn->updateAllocSize(ctx);
     if (ctx.in.relrAuthDyn)
       changed |= ctx.in.relrAuthDyn->updateAllocSize(ctx);
+    finalizeSynthetic(ctx, ctx.in.relaDyn.get());
     if (ctx.in.dynamic && ctx.in.dynamic->getParent()) {
       size_t oldSize = ctx.in.dynamic->getSize();
       finalizeSynthetic(ctx, ctx.in.dynamic.get());
@@ -1764,6 +1766,10 @@ template <class ELFT> void Writer<ELFT>::optimizeBasicBlockJumps() {
 // Sections that finalizeAddressDependentContent may add to.
 static bool mayGrowLate(Ctx &ctx, SyntheticSection *sec) {
   if (isa<GotPartitionSection>(sec))
+    return true;
+  if (ctx.arg.emachine == EM_X86_64 && ctx.target->needsThunks &&
+      (sec == ctx.in.got.get() || sec == ctx.in.relaDyn.get() ||
+       sec == ctx.in.relrDyn.get()))
     return true;
   // relaxOnce may add GOT entries that need relative relocations.
   if (ctx.arg.isPic && ctx.in.got && ctx.in.got->hasDeferredEntries &&

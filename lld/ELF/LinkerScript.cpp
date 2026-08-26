@@ -1213,13 +1213,15 @@ void LinkerScript::partitionLargeExecSections() {
       auto *isd = dyn_cast<InputSectionDescription>(cmd);
       if (!isd) {
         onlyIsd = false;
-        break;
+        continue;
       }
       for (InputSection *s : isd->sections) {
         hasLargeExecInput |= (s->flags & largeExecFlags) == largeExecFlags;
         v.push_back(s);
       }
     }
+    if (hasLargeExecInput)
+      ctx.target->needsThunks = true;
     if (!onlyIsd || !hasLargeExecInput)
       continue;
 

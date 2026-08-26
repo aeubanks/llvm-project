@@ -507,8 +507,7 @@ GotSection::GotSection(Ctx &ctx)
 }
 
 void GotSection::addEntry(const Symbol &sym) {
-  assert(sym.auxIdx == ctx.symAux.size() - 1);
-  ctx.symAux.back().gotIdx = numEntries++;
+  ctx.symAux[sym.auxIdx].gotIdx = numEntries++;
 }
 
 void GotSection::addAuthEntry(const Symbol &sym) {

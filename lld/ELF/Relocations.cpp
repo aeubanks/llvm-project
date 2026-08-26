@@ -788,8 +788,42 @@ void elf::addGotEntry(Ctx &ctx, Symbol &sym) {
                      ctx.target->symbolicRel);
 }
 
-uint64_t GotPartitionSection::addEntry(Symbol &sym) {
-  auto [it, inserted] = entryMap.try_emplace(&sym, 0);
+uint64_t GotSection::addEntryWithAddend(Symbol &sym, int64_t addend) {
+  // Without an addend this is the symbol's regular GOT entry, which may be
+  // shared with other users.
+  if (addend == 0) {
+    if (!sym.isInGot(ctx)) {
+      if (sym.auxIdx == 0)
+        sym.allocateAux(ctx);
+      addGotEntry(ctx, sym);
+    }
+    return sym.getGotOffset(ctx);
+  }
+
+  auto [it, inserted] = addendEntries.try_emplace({&sym, addend}, 0);
+  if (!inserted)
+    return it->second;
+
+  uint64_t off = numEntries++ * ctx.target->gotEntrySize;
+  it->second = off;
+  // A GLOB_DAT relocation cannot express an addend, so a preemptible symbol
+  // needs a symbolic relocation, which the dynamic linker resolves to S + A.
+  if (sym.isPreemptible)
+    ctx.in.relaDyn->addSymbolReloc(ctx.target->symbolicRel, *this, off, sym,
+                                   addend);
+  else if (sym.isGnuIFunc())
+    getIRelativeSection(ctx).addReloc(
+        {ctx.target->iRelativeRel, this, off, false, sym, addend, R_ABS});
+  else if (!ctx.arg.isPic || isAbsolute(sym))
+    addConstant({R_ABS, ctx.target->symbolicRel, off, addend, &sym});
+  else
+    addRelativeReloc(ctx, *this, off, sym, addend, R_ABS,
+                     ctx.target->symbolicRel);
+  return off;
+}
+
+uint64_t GotPartitionSection::addEntry(Symbol &sym, int64_t addend) {
+  auto [it, inserted] = entryMap.try_emplace({&sym, addend}, 0);
   if (!inserted)
     return it->second;
 
@@ -802,15 +836,19 @@ uint64_t GotPartitionSection::addEntry(Symbol &sym) {
       ctx.in.relaDyn->addAddendOnlyRelocIfNonPreemptible(
           ctx.target->tlsGotRel, *this, off, sym, ctx.target->symbolicRel);
   } else if (sym.isPreemptible) {
+    // A GLOB_DAT relocation cannot express an addend, so use a symbolic
+    // relocation, which the dynamic linker resolves to S + A, instead.
     ctx.in.relaDyn->addReloc(
-        {ctx.target->gotRel, this, off, true, sym, 0, R_ADDEND});
+        {addend ? ctx.target->symbolicRel : ctx.target->gotRel, this, off, true,
+         sym, addend, R_ADDEND});
   } else if (sym.isGnuIFunc()) {
     getIRelativeSection(ctx).addReloc(
-        {ctx.target->iRelativeRel, this, off, false, sym, 0, R_ABS});
+        {ctx.target->iRelativeRel, this, off, false, sym, addend, R_ABS});
   } else if (!ctx.arg.isPic || isAbsolute(sym)) {
-    addReloc({R_ABS, ctx.target->symbolicRel, off, 0, &sym});
+    addReloc({R_ABS, ctx.target->symbolicRel, off, addend, &sym});
   } else {
-    addRelativeReloc(ctx, *this, off, sym, 0, R_ABS, ctx.target->symbolicRel);
+    addRelativeReloc(ctx, *this, off, sym, addend, R_ABS,
+                     ctx.target->symbolicRel);
   }
   return off;
 }
@@ -1754,6 +1792,12 @@ static int64_t getPCBias(Ctx &ctx, const InputSection &isec,
   }
   if (ctx.arg.emachine == EM_HEXAGON)
     return -getHexagonPacketOffset(isec, rel);
+  // A R_X86_64_PLT32 relocation is relative to the end of the 4-byte immediate
+  // it applies to, so its addend has a -4 bias baked in.
+  if (ctx.arg.emachine == EM_X86_64) {
+    assert(rel.type == R_X86_64_PLT32);
+    return 4;
+  }
   return 0;
 }
 
@@ -2094,8 +2138,8 @@ bool ThunkCreator::createThunks(uint32_t pass,
             rel.sym = t->getThunkTargetSym();
             rel.expr = fromPlt(rel.expr);
 
-            // On AArch64 and PPC, a jump/call relocation may be encoded as
-            // STT_SECTION + non-zero addend, clear the addend after
+            // On AArch64, PPC and x86-64, a jump/call relocation may be encoded
+            // as STT_SECTION + non-zero addend, clear the addend after
             // redirection.
             if (ctx.arg.emachine != EM_MIPS)
               rel.addend = -getPCBias(ctx, *isec, rel);
