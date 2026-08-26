@@ -25,18 +25,18 @@
 # DISASM:      Disassembly of section .text.2:
 # DISASM-EMPTY:
 # DISASM-NEXT: <_start_2>:
-# DISASM-NEXT:   {{.*}}leaq{{.*}}(%rip), %rax{{.*}}# 0x2000a8 <foo>
+# DISASM-NEXT:   {{.*}}leaq{{.*}}(%rip), %rax{{.*}}# 0x2000e8 <foo>
 
 # DISASM:      Disassembly of section .text.3:
 # DISASM-EMPTY:
 # DISASM-NEXT: <_start_3>:
-# DISASM-NEXT:   {{.*}}leaq{{.*}}(%rip), %rax{{.*}}# 0x2000a8 <foo>
+# DISASM-NEXT:   {{.*}}leaq{{.*}}(%rip), %rax{{.*}}# 0x2000e8 <foo>
 
 # MAP:         1000 1000 7 1 .ltext
 # MAP:         1008 1008 8 8 .got.ltext.0
 # MAP:         200000 200000 7 2097152 .text.2
 # MAP:         200007 200007 7 1 .text.3
-# MAP:         2000a0 2000a0 8 8 .got
+# MAP:         2000e0 2000e0 8 8 .got
 
 #--- lds
 SECTIONS {

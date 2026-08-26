@@ -3505,6 +3505,15 @@ template <class ELFT> void LinkerDriver::link(opt::InputArgList &args) {
   // values such as a default image base address.
   setTarget(ctx);
 
+  if (ctx.arg.emachine == EM_X86_64) {
+    for (InputSectionBase *s : ctx.inputSections) {
+      if ((s->flags & SHF_EXECINSTR) && (s->flags & SHF_X86_64_LARGE)) {
+        ctx.target->needsThunks = true;
+        break;
+      }
+    }
+  }
+
   ctx.arg.eflags = ctx.target->calcEFlags();
   // maxPageSize (sometimes called abi page size) is the maximum page size that
   // the output can be run on. For example if the OS can use 4k or 64k page

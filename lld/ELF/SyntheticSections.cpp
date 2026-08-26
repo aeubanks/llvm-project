@@ -507,8 +507,7 @@ GotSection::GotSection(Ctx &ctx)
 }
 
 void GotSection::addEntry(const Symbol &sym) {
-  assert(sym.auxIdx == ctx.symAux.size() - 1);
-  ctx.symAux.back().gotIdx = numEntries++;
+  ctx.symAux[sym.auxIdx].gotIdx = numEntries++;
 }
 
 void GotSection::addAuthEntry(const Symbol &sym) {
@@ -574,7 +573,8 @@ void GotSection::finalizeContents() {
 bool GotSection::isNeeded() const {
   // Needed if the GOT symbol is used or the number of entries is more than just
   // the header. A GOT with just the header may not be needed.
-  return hasGotOffRel || numEntries > ctx.target->gotHeaderEntriesNum;
+  return hasGotOffRel || numEntries > ctx.target->gotHeaderEntriesNum ||
+         (ctx.arg.emachine == EM_X86_64 && ctx.target->needsThunks);
 }
 
 void GotSection::writeTo(uint8_t *buf) {
@@ -1501,6 +1501,13 @@ RelocationBaseSection::RelocationBaseSection(Ctx &ctx, StringRef name,
       relocsVec(concurrency), relativeRel(ctx.target->relativeRel),
       combreloc(combreloc) {}
 
+bool RelocationBaseSection::isNeeded() const {
+  return !relocs.empty() || !relativeRelocs.empty() ||
+         llvm::any_of(relocsVec, [](auto &v) { return !v.empty(); }) ||
+         (ctx.arg.emachine == EM_X86_64 && ctx.target->needsThunks &&
+          this == ctx.in.relaDyn.get());
+}
+
 void RelocationBaseSection::addSymbolReloc(
     RelType dynType, InputSectionBase &isec, uint64_t offsetInSec, Symbol &sym,
     int64_t addend, std::optional<RelType> addendRelType) {
@@ -1627,6 +1634,13 @@ RelrBaseSection::RelrBaseSection(Ctx &ctx, unsigned concurrency,
               : (ctx.arg.useAndroidRelrTags ? SHT_ANDROID_RELR : SHT_RELR),
           SHF_ALLOC, ctx.arg.wordsize),
       relocsVec(concurrency) {}
+
+bool RelrBaseSection::isNeeded() const {
+  return !relocs.empty() ||
+         llvm::any_of(relocsVec, [](auto &v) { return !v.empty(); }) ||
+         (ctx.arg.emachine == EM_X86_64 && ctx.target->needsThunks &&
+          this == ctx.in.relrDyn.get());
+}
 
 void RelrBaseSection::mergeRels() {
   size_t newSize = relocs.size();

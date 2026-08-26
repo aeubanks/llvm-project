@@ -28,7 +28,7 @@
 # DISASM:      Disassembly of section .ltext.2:
 # DISASM-EMPTY:
 # DISASM-NEXT: <_start_3>:
-# DISASM-NEXT:   {{.*}}leaq{{.*}}(%rip), %rax{{.*}}# 0xc0de0 <foo>
+# DISASM-NEXT:   {{.*}}leaq{{.*}}(%rip), %rax{{.*}}# 0xc0e20 <foo>
 
 # MAP:         10000 {{.*}} .ltext
 # MAP:         40d48 {{.*}} .got.ltext.0
