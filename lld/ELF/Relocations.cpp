@@ -1974,7 +1974,7 @@ bool ThunkCreator::createThunks(uint32_t pass,
             // On AArch64 and PPC, a jump/call relocation may be encoded as
             // STT_SECTION + non-zero addend, clear the addend after
             // redirection.
-            if (ctx.arg.emachine != EM_MIPS)
+            if (ctx.arg.emachine != EM_MIPS && ctx.arg.emachine != EM_X86_64)
               rel.addend = -getPCBias(ctx, *isec, rel);
           }
 

@@ -124,17 +124,20 @@
 # CHECK3-NEXT:  0000000000203307     0 NOTYPE  GLOBAL DEFAULT [[#]] (.data)   _edata
 # CHECK3-NEXT:  0000000000207d0d     0 NOTYPE  GLOBAL DEFAULT [[#]] (.ldata2) _end
 
-# CHECK4:      .note      NOTE
-# CHECK4-NEXT: .ltext     PROGBITS
-# CHECK4-NEXT: .lrodata   PROGBITS
-# CHECK4-NEXT: .rodata    PROGBITS
-# CHECK4-NEXT: .text      PROGBITS
-# CHECK4-NEXT: .data      PROGBITS
-# CHECK4-NEXT: .bss       NOBITS
-# CHECK4-NEXT: .ldata     PROGBITS
-# CHECK4-NEXT: .lbss      NOBITS
-# CHECK4-NEXT: .ltext_w   PROGBITS
-# CHECK4-NEXT: .comment   PROGBITS
+# CHECK4:      .note             NOTE
+# CHECK4-NEXT: .rela.dyn         RELA
+# CHECK4-NEXT: .ltext            PROGBITS
+# CHECK4-NEXT: .lrodata          PROGBITS
+# CHECK4-NEXT: .rodata           PROGBITS
+# CHECK4-NEXT: .text             PROGBITS
+# CHECK4-NEXT: .got              PROGBITS
+# CHECK4-NEXT: .relro_padding    NOBITS
+# CHECK4-NEXT: .data             PROGBITS
+# CHECK4-NEXT: .bss              NOBITS
+# CHECK4-NEXT: .ldata            PROGBITS
+# CHECK4-NEXT: .lbss             NOBITS
+# CHECK4-NEXT: .ltext_w          PROGBITS
+# CHECK4-NEXT: .comment          PROGBITS
 
 ## .ltext.hot and .ltext.unlikely are kept separate with -z keep-text-section-prefix.
 # CHECK5:      .ltext.hot      PROGBITS

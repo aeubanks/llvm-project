@@ -1598,6 +1598,41 @@ Thunk::Thunk(Ctx &ctx, Symbol &d, int64_t a)
 
 Thunk::~Thunk() = default;
 
+namespace {
+class X86_64Thunk final : public Thunk {
+public:
+  X86_64Thunk(Ctx &ctx, Symbol &dest, int64_t a) : Thunk(ctx, dest, a) {}
+  uint32_t size() override { return 6; }
+  void writeTo(uint8_t *buf) override;
+  void addSymbols(ThunkSection &isec) override;
+};
+} // namespace
+
+void X86_64Thunk::writeTo(uint8_t *buf) {
+  // jmp *foo@GOTPCREL(%rip)
+  buf[0] = 0xff;
+  buf[1] = 0x25;
+  uint64_t s = destination.getGotVA(ctx);
+  uint64_t p = getThunkTargetSym()->getVA(ctx);
+  write32(ctx, buf + 2, s - p - 6);
+}
+
+void X86_64Thunk::addSymbols(ThunkSection &isec) {
+  addSymbol(ctx.saver.save("__X86_64Thunk_" + destination.getName()), STT_FUNC,
+            0, isec);
+  if (!destination.isInGot(ctx)) {
+    if (destination.auxIdx == 0)
+      destination.allocateAux(ctx);
+    elf::addGotEntry(ctx, destination);
+  }
+}
+
+static std::unique_ptr<Thunk> addThunkX86_64(Ctx &ctx, RelType type, Symbol &s,
+                                             int64_t a) {
+  assert(type == R_X86_64_PLT32);
+  return std::make_unique<X86_64Thunk>(ctx, s, a);
+}
+
 static std::unique_ptr<Thunk> addThunkAArch64(Ctx &ctx, const InputSection &sec,
                                               RelType type, Symbol &s,
                                               int64_t a) {
@@ -1853,9 +1888,11 @@ std::unique_ptr<Thunk> elf::addThunk(Ctx &ctx, const InputSection &isec,
     return addThunkPPC64(ctx, rel.type, s, a);
   case EM_HEXAGON:
     return addThunkHexagon(ctx, isec, rel, s);
+  case EM_X86_64:
+    return addThunkX86_64(ctx, rel.type, s, a);
   default:
-    llvm_unreachable(
-        "add Thunk only supported for ARM, AVR, Hexagon, Mips and PowerPC");
+    llvm_unreachable("add Thunk only supported for ARM, AVR, Hexagon, Mips, "
+                     "PowerPC, x86-64 and AArch64");
   }
 }
 
