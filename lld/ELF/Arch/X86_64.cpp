@@ -50,6 +50,10 @@ public:
                                         uint8_t stOther) const override;
   bool deleteFallThruJmpInsn(InputSection &is,
                              InputSection *nextIS) const override;
+  bool inBranchRange(RelType type, uint64_t src, uint64_t dst) const override;
+  bool needsThunk(RelExpr expr, RelType type, const InputFile *file,
+                  uint64_t branchAddr, const Symbol &s,
+                  int64_t a) const override;
   bool relaxOnce(int pass) const override;
   void relaxCFIJumpTables() const override;
   void applyBranchToBranchOpt() const override;
@@ -102,6 +106,19 @@ X86_64::X86_64(Ctx &ctx) : TargetInfo(ctx) {
   // Align to the large page size (known as a superpage or huge page).
   // FreeBSD automatically promotes large, superpage-aligned allocations.
   defaultImageBase = 0x200000;
+}
+
+bool X86_64::inBranchRange(RelType type, uint64_t src, uint64_t dst) const {
+  assert(type == R_X86_64_PLT32);
+  return isInt<32>(dst - src);
+}
+
+bool X86_64::needsThunk(RelExpr expr, RelType type, const InputFile *file,
+                        uint64_t branchAddr, const Symbol &s, int64_t a) const {
+  if (type != R_X86_64_PLT32)
+    return false;
+  uint64_t dst = expr == R_PLT_PC ? s.getPltVA(ctx) + a : s.getVA(ctx, a);
+  return !inBranchRange(type, branchAddr, dst);
 }
 
 // Opcodes for the different X86_64 jmp instructions.

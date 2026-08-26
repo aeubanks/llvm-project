@@ -120,6 +120,10 @@ public:
 
   void addConstant(const Relocation &r) { addReloc(r); }
   void addEntry(const Symbol &sym);
+  // Add an entry holding sym+addend, creating one if it doesn't exist yet, and
+  // return its offset within this section. Used by range extension thunks,
+  // which may target a section symbol with a non-zero addend.
+  uint64_t addEntryWithAddend(Symbol &sym, int64_t addend);
   void addAuthEntry(const Symbol &sym);
   bool addTlsDescEntry(const Symbol &sym);
   void addTlsDescAuthEntry();
@@ -145,6 +149,8 @@ protected:
     bool isSymbolFunc;
   };
   SmallVector<AuthEntryInfo, 0> authEntries;
+  // Maps a (symbol, addend) pair to the offset of its GOT entry.
+  llvm::DenseMap<std::pair<Symbol *, int64_t>, uint64_t> addendEntries;
 };
 
 class GotPartitionSection final : public SyntheticSection {
@@ -160,10 +166,12 @@ public:
            cast<InputSectionBase>(sec)->isGotPartition;
   }
 
-  Defined *addEntry(Symbol &sym);
+  // Add an entry holding sym+addend, creating one if it doesn't exist yet, and
+  // return the symbol pointing at it.
+  Defined *addEntry(Symbol &sym, int64_t addend = 0);
 
 private:
-  llvm::DenseMap<Symbol *, Defined *> entryMap;
+  llvm::DenseMap<std::pair<Symbol *, int64_t>, Defined *> entryMap;
   size_t numEntries = 0;
 };
 
@@ -559,10 +567,7 @@ public:
         {dynType, &sec, offsetInSec, isAgainstSymbol, sym, addend, expr},
         shard);
   }
-  bool isNeeded() const override {
-    return !relocs.empty() || !relativeRelocs.empty() ||
-           llvm::any_of(relocsVec, [](auto &v) { return !v.empty(); });
-  }
+  bool isNeeded() const override;
   size_t getSize() const override {
     size_t count = relocs.size() + relativeRelocs.size();
     for (const auto &v : relocsVec)
@@ -640,10 +645,7 @@ public:
     else
       relocs.push_back({&isec, isec.relocs().size() - 1});
   }
-  bool isNeeded() const override {
-    return !relocs.empty() ||
-           llvm::any_of(relocsVec, [](auto &v) { return !v.empty(); });
-  }
+  bool isNeeded() const override;
   void finalizeContents() override;
   SmallVector<RelativeReloc, 0> relocs;
 

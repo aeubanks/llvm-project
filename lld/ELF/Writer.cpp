@@ -1530,9 +1530,10 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
   // the final addresses are unavailable.
   uint32_t pass = 0, assignPasses = 0;
   while (!ctx.arg.relocatable) {
-    bool changed = ctx.target->needsThunks
-                       ? tc.createThunks(pass, ctx.outputSections)
-                       : ctx.target->relaxOnce(pass);
+    bool changed = false;
+    if (ctx.target->needsThunks)
+      changed |= tc.createThunks(pass, ctx.outputSections);
+    changed |= ctx.target->relaxOnce(pass);
     bool spilled = ctx.script->spillSections();
     changed |= spilled;
     ++pass;
@@ -1588,7 +1589,8 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
       changed |= ctx.in.relrDyn->updateAllocSize(ctx);
     if (ctx.in.relrAuthDyn)
       changed |= ctx.in.relrAuthDyn->updateAllocSize(ctx);
-    if (ctx.in.relrAuthDyn && ctx.in.dynamic && ctx.in.dynamic->getParent()) {
+    finalizeSynthetic(ctx, ctx.in.relaDyn.get());
+    if (ctx.in.dynamic && ctx.in.dynamic->getParent()) {
       size_t oldSize = ctx.in.dynamic->getSize();
       finalizeSynthetic(ctx, ctx.in.dynamic.get());
       changed |= (oldSize != ctx.in.dynamic->getSize());

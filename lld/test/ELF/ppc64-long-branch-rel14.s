@@ -11,7 +11,7 @@
 
 # RUN: llvm-mc -filetype=obj -triple=powerpc64le %s -o %t.o
 # RUN: ld.lld -pie -T %t.lds %t.o -o %t
-# RUN: llvm-readelf -r %t | FileCheck --check-prefix=SEC-PI -DOFF0=a0b0 -DOFF1=a0b8 %s
+# RUN: llvm-readelf -r %t | FileCheck --check-prefix=SEC-PI -DOFF0=a0f0 -DOFF1=a0f8 %s
 # RUN: llvm-objdump -d --no-show-raw-insn %t | FileCheck %s
 
 ## --pic-veneer selects PI long-branch thunks in a non-PIC link.
