@@ -1598,6 +1598,59 @@ Thunk::Thunk(Ctx &ctx, Symbol &d, int64_t a)
 
 Thunk::~Thunk() = default;
 
+namespace {
+// The addend of an R_X86_64_PLT32 relocation has a -4 bias baked in, so the
+// destination of the branch is destination + addend + 4.
+class X86_64Thunk final : public Thunk {
+public:
+  X86_64Thunk(Ctx &ctx, Symbol &dest, int64_t a) : Thunk(ctx, dest, a) {}
+  uint32_t size() override { return 6; }
+  void writeTo(uint8_t *buf) override;
+  void addSymbols(ThunkSection &isec) override;
+
+private:
+  // The GOT entry holding the destination, created by addSymbols.
+  InputSectionBase *gotSec = nullptr;
+  uint64_t gotOff = 0;
+};
+} // namespace
+
+void X86_64Thunk::writeTo(uint8_t *buf) {
+  // jmp *foo@GOTPCREL(%rip)
+  buf[0] = 0xff;
+  buf[1] = 0x25;
+  uint64_t s = gotSec->getVA(gotOff);
+  uint64_t p = getThunkTargetSym()->getVA(ctx);
+  ctx.target->relocateNoSym(buf + 2, R_X86_64_GOTPCREL, s - p - 6);
+}
+
+void X86_64Thunk::addSymbols(ThunkSection &isec) {
+  StringRef destName = destination.getName();
+  if (destination.isSection())
+    destName = cast<Defined>(destination).section->name;
+  std::string name = ("__X86_64Thunk_" + destName).str();
+  if (int64_t a = addend + 4)
+    name += (a < 0 ? "-0x" + utohexstr(-a) : "+0x" + utohexstr(a));
+  addSymbol(ctx.saver.save(name), STT_FUNC, 0, isec);
+  if (GotPartitionSection *gp = isec.getParent()->gotPartition) {
+    gotSec = gp;
+    gotOff = gp->addEntry(destination, addend + 4);
+  } else if (destination.isInIplt && destination.isGnuIFunc() &&
+             addend + 4 == 0) {
+    gotSec = ctx.in.igotPlt.get();
+    gotOff = destination.getGotPltOffset(ctx);
+  } else {
+    gotSec = ctx.in.got.get();
+    gotOff = ctx.in.got->addEntryWithAddend(destination, addend + 4);
+  }
+}
+
+static std::unique_ptr<Thunk> addThunkX86_64(Ctx &ctx, RelType type, Symbol &s,
+                                             int64_t a) {
+  assert(type == R_X86_64_PLT32);
+  return std::make_unique<X86_64Thunk>(ctx, s, a);
+}
+
 static std::unique_ptr<Thunk> addThunkAArch64(Ctx &ctx, const InputSection &sec,
                                               RelType type, Symbol &s,
                                               int64_t a) {
@@ -1853,9 +1906,11 @@ std::unique_ptr<Thunk> elf::addThunk(Ctx &ctx, const InputSection &isec,
     return addThunkPPC64(ctx, rel.type, s, a);
   case EM_HEXAGON:
     return addThunkHexagon(ctx, isec, rel, s);
+  case EM_X86_64:
+    return addThunkX86_64(ctx, rel.type, s, a);
   default:
-    llvm_unreachable(
-        "add Thunk only supported for ARM, AVR, Hexagon, Mips and PowerPC");
+    llvm_unreachable("add Thunk only supported for ARM, AVR, Hexagon, Mips, "
+                     "PowerPC, x86-64 and AArch64");
   }
 }
 

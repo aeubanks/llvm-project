@@ -205,7 +205,7 @@
 # RUN: ld.lld -shared -z pack-relative-relocs dynamic-section-growth.o -o dynamic-section-growth.so
 # RUN: llvm-readelf -S -d -r -x.dynamic dynamic-section-growth.so | FileCheck --check-prefix=DYN-GROW %s
 
-# DYN-GROW:     .rela.dyn         RELA            0000000000000248 000248 000018 18   A  0   0  8
+# DYN-GROW:     .rela.dyn         RELA            0000000000000248 000248 000018 18   A  1   0  8
 # DYN-GROW:     .relr.auth.dyn    AARCH64_AUTH_RELR 0000000000000260 000260 000008 08   A  0   0  8
 # DYN-GROW:     .dynamic          DYNAMIC         0000000000020268 000268 0000d0 10  WA  4   0  8
 

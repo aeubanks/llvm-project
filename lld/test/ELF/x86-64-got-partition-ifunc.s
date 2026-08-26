@@ -15,29 +15,34 @@
 # RUN: llvm-readelf -S -r -x .got.ltext.0 %t.pie >> %t.pie.txt
 # RUN: FileCheck %s < %t.pie.txt
 
+# CHECK:      <__X86_64Thunk_bar>:
+# CHECK-NEXT:   jmpq *{{.*}}(%rip) # 0x[[#%x, GOT_BAR:]]
 # CHECK:      <_start>:
 # CHECK-NEXT:   movq {{.*}}(%rip), %rax # 0x[[#%x, GOT:]]
+# CHECK-NEXT:   callq 0x{{.*}} <__X86_64Thunk_bar>
 # CHECK-NEXT:   jmpq *%rax
 # CHECK:      [[#%.16x, RESOLVER:]] <resolver>:
 
-## The GOT partition entry loaded by _start. No .got or .got.plt is emitted.
-# CHECK-NOT:  .got{{[ \t.]}}
-# CHECK:      .got.ltext.0 PROGBITS [[#%.16x, GOT]]
-# CHECK-NOT:  .got{{[ \t.]}}
+## The GOT partition entries loaded by _start and __X86_64Thunk_bar. Primary .got is empty (size 0).
+# CHECK:      .got.ltext.0 PROGBITS [[#%.16x, GOT]] {{.*}} 000010
+# CHECK:      .got PROGBITS {{.*}} 000000
 
-## One IRELATIVE for the GOT partition entry with the resolver as the addend.
-# CHECK:      Relocation section '.rela.dyn' {{.*}} contains 1 entries:
-# CHECK:      [[#%.16x, GOT]] {{.*}} R_X86_64_IRELATIVE [[#%x, RESOLVER]]
+## IRELATIVE relocations for the GOT partition entries and .igot.plt with the resolver as the addend.
+# CHECK:      Relocation section '.rela.dyn' {{.*}} contains 3 entries:
+# CHECK:      {{.*}} R_X86_64_IRELATIVE [[#%x, RESOLVER]]
+# CHECK-NEXT: [[#%.16x, GOT]] {{.*}} R_X86_64_IRELATIVE [[#%x, RESOLVER]]
+# CHECK-NEXT: [[#%.16x, GOT_BAR]] {{.*}} R_X86_64_IRELATIVE [[#%x, RESOLVER]]
 
-## The entry must not statically hold the address of the resolver.
+## The entries must not statically hold the address of the resolver.
 # CHECK:      Hex dump of section '.got.ltext.0':
-# CHECK-NEXT: 0x[[#%.8x, GOT]] 00000000 00000000
+# CHECK-NEXT: 0x[[#%.8x, GOT]] 00000000 00000000 00000000 00000000
 
 .section .ltext, "axl"
 .globl _start
 .type _start, @function
 _start:
   movq foo@GOTPCREL(%rip), %rax
+  call bar
   jmp *%rax
 
 .section .ltext.pad, "axl", @nobits
@@ -51,3 +56,6 @@ resolver:
 .globl foo
 .type foo, @gnu_indirect_function
 .set foo, resolver
+.globl bar
+.type bar, @gnu_indirect_function
+.set bar, resolver
