@@ -4068,6 +4068,9 @@ void AssemblyWriter::printGlobal(const GlobalVariable *GV) {
     case CodeModel::Large:
       Out << "large";
       break;
+    case CodeModel::JIT:
+      Out << "jit";
+      break;
     }
     Out << '"';
   }

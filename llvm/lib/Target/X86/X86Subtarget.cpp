@@ -73,7 +73,8 @@ X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
   // Tagged globals have non-zero upper bits, which makes direct references
   // require a 64-bit immediate. With the small/medium code models this causes
   // relocation errors, so we go through the GOT instead.
-  if (AllowTaggedGlobals && CM != CodeModel::Large && GV && !isa<Function>(GV))
+  if (AllowTaggedGlobals && CM != CodeModel::Large && CM != CodeModel::JIT &&
+      GV && !isa<Function>(GV))
     return X86II::MO_GOTPCREL_NORELAX;
 
   // If we're not PIC, it's not very interesting.
@@ -87,7 +88,7 @@ X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
              "Tiny codesize model not supported on X86");
       // In the large code model, all text is far from any global data, so we
       // use GOTOFF.
-      if (CM == CodeModel::Large)
+      if (CM == CodeModel::Large || CM == CodeModel::JIT)
         return X86II::MO_GOTOFF;
       // Large GlobalValues use GOTOFF, otherwise use RIP-rel access.
       if (GV)
@@ -124,7 +125,9 @@ X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
 unsigned char X86Subtarget::classifyGlobalReference(const GlobalValue *GV,
                                                     const Module &M) const {
   // The static large model never uses stubs.
-  if (TM.getCodeModel() == CodeModel::Large && !isPositionIndependent())
+  if ((TM.getCodeModel() == CodeModel::Large ||
+       TM.getCodeModel() == CodeModel::JIT) &&
+      !isPositionIndependent())
     return X86II::MO_NO_FLAG;
 
   // Absolute symbols can be referenced directly.
@@ -159,7 +162,8 @@ unsigned char X86Subtarget::classifyGlobalReference(const GlobalValue *GV,
     // ELF supports a large, truly PIC code model with non-PC relative GOT
     // references. Other object file formats do not. Use the no-flag, 64-bit
     // reference for them.
-    if (TM.getCodeModel() == CodeModel::Large)
+    if (TM.getCodeModel() == CodeModel::Large ||
+        TM.getCodeModel() == CodeModel::JIT)
       return isTargetELF() ? X86II::MO_GOT : X86II::MO_NO_FLAG;
     // Tagged globals have non-zero upper bits, which makes direct references
     // require a 64-bit immediate. So we can't let the linker relax the
@@ -327,7 +331,8 @@ X86Subtarget::X86Subtarget(const Triple &TT, StringRef CPU, StringRef TuneCPU,
       InstrInfo(initializeSubtargetDependencies(CPU, TuneCPU, FS)),
       TLInfo(TM, *this), FrameLowering(*this, getStackAlignment()) {
   // Determine the PICStyle based on the target selected.
-  if (!isPositionIndependent() || TM.getCodeModel() == CodeModel::Large)
+  if (!isPositionIndependent() || TM.getCodeModel() == CodeModel::Large ||
+      TM.getCodeModel() == CodeModel::JIT)
     // With the large code model, None forces all memory accesses to be indirect
     // rather than RIP-relative.
     setPICStyle(PICStyles::Style::None);

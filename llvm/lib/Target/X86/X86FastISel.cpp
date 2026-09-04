@@ -3771,7 +3771,7 @@ Register X86FastISel::X86MaterializeFP(const ConstantFP *CFP, MVT VT) {
   // Can't handle alternate code models yet.
   CodeModel::Model CM = TM.getCodeModel();
   if (CM != CodeModel::Small && CM != CodeModel::Medium &&
-      CM != CodeModel::Large)
+      CM != CodeModel::Large && CM != CodeModel::JIT)
     return Register();
 
   // Get opcode and regclass of the output for the given load instruction.
@@ -3810,7 +3810,8 @@ Register X86FastISel::X86MaterializeFP(const ConstantFP *CFP, MVT VT) {
     PICBase = getInstrInfo()->getGlobalBaseReg(FuncInfo.MF);
   else if (OpFlag == X86II::MO_GOTOFF)
     PICBase = getInstrInfo()->getGlobalBaseReg(FuncInfo.MF);
-  else if (Subtarget->is64Bit() && TM.getCodeModel() != CodeModel::Large)
+  else if (Subtarget->is64Bit() && TM.getCodeModel() != CodeModel::Large &&
+           TM.getCodeModel() != CodeModel::JIT)
     PICBase = X86::RIP;
 
   // Create the load from the constant pool.
@@ -3818,7 +3819,8 @@ Register X86FastISel::X86MaterializeFP(const ConstantFP *CFP, MVT VT) {
   Register ResultReg = createResultReg(TLI.getRegClassFor(VT.SimpleTy));
 
   // Large code model only applies to 64-bit mode.
-  if (Subtarget->is64Bit() && CM == CodeModel::Large) {
+  if (Subtarget->is64Bit() &&
+      (CM == CodeModel::Large || CM == CodeModel::JIT)) {
     Register AddrReg = createResultReg(&X86::GR64RegClass);
     BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, MIMD, TII.get(X86::MOV64ri),
             AddrReg)
