@@ -42,10 +42,8 @@ define i32 @main() uwtable optsize ssp personality ptr @__gxx_personality_v0 {
 ; CHECK-LABEL:        .Ltmp0:
 ; CHECK-SMALL-NEXT:     callq   _Z1fv
 ; CHECK-MEDIUM-NEXT:    callq   _Z1fv
-; CHECK-NON-PIC-LARGE-NEXT: movabsq $_Z1fv, %rax
-; CHECK-NON-PIC-LARGE-NEXT: callq   *%rax
-; CHECK-PIC-LARGE-NEXT:     movabsq $_Z1fv@GOT, %rax
-; CHECK-PIC-LARGE-NEXT:     callq *(%rbx,%rax)
+; CHECK-NON-PIC-LARGE-NEXT: callq   _Z1fv@PLT
+; CHECK-PIC-LARGE-NEXT:     callq   _Z1fv@PLT
 ; CHECK-LABEL:        .Ltmp1:
 
 ; CHECK-NOT:            .cfi_lsda

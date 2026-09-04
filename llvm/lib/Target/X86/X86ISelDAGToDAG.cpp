@@ -1976,8 +1976,8 @@ bool X86DAGToDAGISel::matchWrapper(SDValue N, X86ISelAddressMode &AM) {
   // That signifies access to globals that are known to be "near",
   // such as the GOT itself.
   CodeModel::Model M = TM.getCodeModel();
-  if (Subtarget->is64Bit() &&
-      (M == CodeModel::Large || M == CodeModel::JIT) && !IsRIPRelTLS)
+  if (Subtarget->is64Bit() && (M == CodeModel::Large || M == CodeModel::JIT) &&
+      !IsRIPRelTLS && !IsRIPRel)
     return true;
 
   // Base and index reg must be 0 in order to use %rip as base.

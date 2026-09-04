@@ -370,7 +370,7 @@ MCOperand X86MCInstLower::LowerMachineOperand(const MachineInstr *MI,
 
 // Replace TAILJMP opcodes with their equivalent opcodes that have encoding
 // information.
-static unsigned convertTailJumpOpcode(unsigned Opcode, bool IsLarge = false) {
+static unsigned convertTailJumpOpcode(unsigned Opcode, bool EmitAbsJmp = false) {
   switch (Opcode) {
   case X86::TAILJMPr:
     Opcode = X86::JMP32r;
@@ -392,7 +392,7 @@ static unsigned convertTailJumpOpcode(unsigned Opcode, bool IsLarge = false) {
     break;
   case X86::TAILJMPd:
   case X86::TAILJMPd64:
-    Opcode = IsLarge ? X86::JMPABS64i : X86::JMP_1;
+    Opcode = EmitAbsJmp ? X86::JMPABS64i : X86::JMP_1;
     break;
   case X86::TAILJMPd_CC:
   case X86::TAILJMPd64_CC:
@@ -490,11 +490,14 @@ void X86MCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
     break;
   case X86::TAILJMPd64: {
     assert(OutMI.getNumOperands() == 1 && "Unexpected number of operands!");
-    bool IsLarge = TM.getCodeModel() == CodeModel::Large ||
-                   TM.getCodeModel() == CodeModel::JIT;
-    assert((!IsLarge || AsmPrinter.getSubtarget().hasJMPABS()) &&
+    // For Large code model ELF, we do not emit absolute jumps as linker intercepts regular PLT32 jumps
+    // and inserts thunks to reach far away destinations.
+    bool EmitAbsJump = TM.getCodeModel() == CodeModel::JIT ||
+                       (TM.getCodeModel() == CodeModel::Large &&
+                        !AsmPrinter.getSubtarget().isTargetELF());
+    assert((!EmitAbsJump || AsmPrinter.getSubtarget().hasJMPABS()) &&
            "Unexpected TAILJMPd64 in large code model without JMPABS");
-    OutMI.setOpcode(convertTailJumpOpcode(OutMI.getOpcode(), IsLarge));
+    OutMI.setOpcode(convertTailJumpOpcode(OutMI.getOpcode(), EmitAbsJump));
     break;
   }
   case X86::TAILJMPd_CC:
