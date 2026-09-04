@@ -1976,7 +1976,8 @@ bool X86DAGToDAGISel::matchWrapper(SDValue N, X86ISelAddressMode &AM) {
   // That signifies access to globals that are known to be "near",
   // such as the GOT itself.
   CodeModel::Model M = TM.getCodeModel();
-  if (Subtarget->is64Bit() && M == CodeModel::Large && !IsRIPRelTLS)
+  if (Subtarget->is64Bit() &&
+      (M == CodeModel::Large || M == CodeModel::JIT) && !IsRIPRelTLS)
     return true;
 
   // Base and index reg must be 0 in order to use %rip as base.
@@ -2067,6 +2068,7 @@ bool X86DAGToDAGISel::matchAddress(SDValue N, X86ISelAddressMode &AM) {
   // Post-processing: Convert foo to foo(%rip), even in non-PIC mode,
   // because it has a smaller encoding.
   if (TM.getCodeModel() != CodeModel::Large &&
+      TM.getCodeModel() != CodeModel::JIT &&
       (!AM.GV || !TM.isLargeGlobalValue(AM.GV)) && Subtarget->is64Bit() &&
       AM.Scale == 1 && AM.BaseType == X86ISelAddressMode::RegBase &&
       AM.Base_Reg.getNode() == nullptr && AM.IndexReg.getNode() == nullptr &&
@@ -3232,7 +3234,8 @@ bool X86DAGToDAGISel::selectMOV64Imm32(SDValue N, SDValue &Imm) {
   // Cannot use 32 bit constants to reference objects in kernel/large code
   // model.
   if (TM.getCodeModel() == CodeModel::Kernel ||
-      TM.getCodeModel() == CodeModel::Large)
+      TM.getCodeModel() == CodeModel::Large ||
+      TM.getCodeModel() == CodeModel::JIT)
     return false;
 
   // In static codegen with small code model, we can get the address of a label
@@ -3519,7 +3522,8 @@ bool X86DAGToDAGISel::isSExtAbsoluteSymbolRef(unsigned Width, SDNode *N) const {
   // space, so globals can be a sign extended 32-bit immediate.
   // In other code models, small globals are in the low 2GB of the address
   // space, so sign extending them is equivalent to zero extending them.
-  return TM.getCodeModel() != CodeModel::Large && Width == 32 &&
+  return TM.getCodeModel() != CodeModel::Large &&
+         TM.getCodeModel() != CodeModel::JIT && Width == 32 &&
          !TM.isLargeGlobalValue(GV);
 }
 

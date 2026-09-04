@@ -1133,7 +1133,8 @@ void X86AsmPrinter::emitEndOfAsmFile(Module &M) {
   }
 
   // Emit __morestack address if needed for indirect calls.
-  if (TT.isX86_64() && TM.getCodeModel() == CodeModel::Large) {
+  if (TT.isX86_64() && (TM.getCodeModel() == CodeModel::Large ||
+                        TM.getCodeModel() == CodeModel::JIT)) {
     if (MCSymbol *AddrSymbol = OutContext.lookupSymbol("__morestack_addr")) {
       Align Alignment(1);
       MCSection *ReadOnlySection = getObjFileLowering().getSectionForConstant(

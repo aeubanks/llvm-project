@@ -1170,6 +1170,7 @@ void AArch64PrologueEmitter::emitWindowsStackProbe(
     }
     break;
   case CodeModel::Large:
+  case CodeModel::JIT:
     BuildMI(MBB, MBBI, DL, TII->get(AArch64::MOVaddrEXT))
         .addReg(AArch64::X16, RegState::Define)
         .addExternalSymbol(ChkStk)

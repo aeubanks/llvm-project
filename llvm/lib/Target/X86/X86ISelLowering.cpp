@@ -3160,7 +3160,7 @@ bool X86::isOffsetSuitableForCodeModel(int64_t Offset, CodeModel::Model CM,
 
   // We can fold large offsets in the large code model because we always use
   // 64-bit offsets.
-  if (CM == CodeModel::Large)
+  if (CM == CodeModel::Large || CM == CodeModel::JIT)
     return true;
 
   // For kernel code model we know that all object resist in the negative half

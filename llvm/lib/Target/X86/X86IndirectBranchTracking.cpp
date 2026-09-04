@@ -104,6 +104,7 @@ static bool needsPrologueENDBR(MachineFunction &MF, const Module *M) {
   switch (MF.getTarget().getCodeModel()) {
   // Large code model functions always reachable through indirect calls.
   case CodeModel::Large:
+  case CodeModel::JIT:
     return true;
   // Address taken or externally linked functions may be reachable.
   default:

@@ -79,7 +79,8 @@ static bool initGlobalBaseReg(MachineFunction &MF) {
     PC = GlobalBaseReg;
 
   if (STI.is64Bit()) {
-    if (TM->getCodeModel() == CodeModel::Large) {
+    if (TM->getCodeModel() == CodeModel::Large ||
+        TM->getCodeModel() == CodeModel::JIT) {
       // In the large code model, we are aiming for this code, though the
       // register allocation may vary:
       //   leaq .LN$pb(%rip), %rax

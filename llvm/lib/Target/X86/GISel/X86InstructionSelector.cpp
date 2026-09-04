@@ -654,7 +654,8 @@ static bool X86SelectAddress(MachineInstr &I, const X86TargetMachine &TM,
   }
   case TargetOpcode::G_CONSTANT_POOL: {
     // TODO: Need a separate move for Large model
-    if (TM.getCodeModel() == CodeModel::Large)
+    if (TM.getCodeModel() == CodeModel::Large ||
+        TM.getCodeModel() == CodeModel::JIT)
       return false;
 
     AM.GVOpFlags = STI.classifyLocalReference(nullptr);
@@ -1608,7 +1609,7 @@ bool X86InstructionSelector::materializeFP(MachineInstr &I,
 
   // Can't handle alternate code models yet.
   CodeModel::Model CM = TM.getCodeModel();
-  if (CM != CodeModel::Small && CM != CodeModel::Large)
+  if (CM != CodeModel::Small && CM != CodeModel::Large && CM != CodeModel::JIT)
     return false;
 
   const Register DstReg = I.getOperand(0).getReg();
@@ -1627,7 +1628,7 @@ bool X86InstructionSelector::materializeFP(MachineInstr &I,
   MachineInstr *LoadInst = nullptr;
   unsigned char OpFlag = STI.classifyLocalReference(nullptr);
 
-  if (CM == CodeModel::Large && STI.is64Bit()) {
+  if ((CM == CodeModel::Large || CM == CodeModel::JIT) && STI.is64Bit()) {
     // Under X86-64 non-small code model, GV (and friends) are 64-bits, so
     // they cannot be folded into immediate fields.
 

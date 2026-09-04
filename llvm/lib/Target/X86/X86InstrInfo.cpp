@@ -8572,8 +8572,9 @@ X86InstrInfo::foldMemoryOperandImpl(MachineFunction &MF, MachineInstr &MI,
     // Folding a V_SET0 or V_SETALLONES as a load, to ease register pressure.
     // Create a constant-pool entry and operands to load from it.
 
-    // Large code model can't fold loads this way.
-    if (MF.getTarget().getCodeModel() == CodeModel::Large)
+    // Large or JIT code model can't fold loads this way.
+    if (MF.getTarget().getCodeModel() == CodeModel::Large ||
+        MF.getTarget().getCodeModel() == CodeModel::JIT)
       return nullptr;
 
     // x86-32 PIC requires a PIC base register for constant pools.

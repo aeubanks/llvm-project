@@ -1244,7 +1244,9 @@ void X86FrameLowering::emitStackProbeCall(
     MachineFunction &MF, MachineBasicBlock &MBB,
     MachineBasicBlock::iterator MBBI, const DebugLoc &DL, bool InProlog,
     std::optional<MachineFunction::DebugInstrOperandPair> InstrNum) const {
-  bool IsLargeCodeModel = MF.getTarget().getCodeModel() == CodeModel::Large;
+  bool IsLargeCodeModel =
+      MF.getTarget().getCodeModel() == CodeModel::Large ||
+      MF.getTarget().getCodeModel() == CodeModel::JIT;
 
   // FIXME: Add indirect thunk support and remove this.
   if (Is64Bit && IsLargeCodeModel && STI.useIndirectThunkCalls())
@@ -1268,7 +1270,7 @@ void X86FrameLowering::emitStackProbeCall(
 
   // All current stack probes take AX and SP as input, clobber flags, and
   // preserve all registers. x86_64 probes leave RSP unmodified.
-  if (Is64Bit && MF.getTarget().getCodeModel() == CodeModel::Large) {
+  if (Is64Bit && IsLargeCodeModel) {
     // For the large code model, we have to call through a register. Use R11,
     // as it is scratch in all supported calling conventions.
     BuildMI(MBB, MBBI, DL, TII.get(X86::MOV64ri), X86::R11)
@@ -3689,7 +3691,8 @@ void X86FrameLowering::adjustForSegmentedStacks(
   }
 
   // __morestack is in libgcc
-  if (Is64Bit && MF.getTarget().getCodeModel() == CodeModel::Large) {
+  if (Is64Bit && (MF.getTarget().getCodeModel() == CodeModel::Large ||
+                  MF.getTarget().getCodeModel() == CodeModel::JIT)) {
     // Under the large code model, we cannot assume that __morestack lives
     // within 2^31 bytes of the call site, so we cannot use pc-relative
     // addressing. We cannot perform the call via a temporary register,

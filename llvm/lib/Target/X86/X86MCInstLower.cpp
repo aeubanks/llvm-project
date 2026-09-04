@@ -490,7 +490,8 @@ void X86MCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
     break;
   case X86::TAILJMPd64: {
     assert(OutMI.getNumOperands() == 1 && "Unexpected number of operands!");
-    bool IsLarge = TM.getCodeModel() == CodeModel::Large;
+    bool IsLarge = TM.getCodeModel() == CodeModel::Large ||
+                   TM.getCodeModel() == CodeModel::JIT;
     assert((!IsLarge || AsmPrinter.getSubtarget().hasJMPABS()) &&
            "Unexpected TAILJMPd64 in large code model without JMPABS");
     OutMI.setOpcode(convertTailJumpOpcode(OutMI.getOpcode(), IsLarge));
