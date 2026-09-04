@@ -63,6 +63,7 @@ class EhFrameSection;
 class GdbIndexSection;
 class GnuHashTableSection;
 class GotPltSection;
+class GotPartitionSection;
 class GotSection;
 class HashTableSection;
 class IgotPltSection;
@@ -479,6 +480,7 @@ struct Config {
   uint64_t commonPageSize;
   uint64_t maxPageSize;
   uint64_t mipsGotSize;
+  uint64_t gotPartitionThreshold;
   uint64_t zStackSize;
   unsigned ltoPartitions;
   unsigned ltoo;
@@ -606,6 +608,7 @@ struct InStruct {
   std::unique_ptr<GnuHashTableSection> gnuHashTab;
   std::unique_ptr<GotPltSection> gotPlt;
   std::unique_ptr<GotSection> got;
+  SmallVector<GotPartitionSection *, 0> gotPartitions;
   std::unique_ptr<HashTableSection> hashTab;
   std::unique_ptr<IgotPltSection> igotPlt;
   std::unique_ptr<IpltSection> iplt;

@@ -1507,6 +1507,8 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
                    OPT_no_lto_unique_basic_block_section_names, false);
   ctx.arg.mapFile = args.getLastArgValue(OPT_Map);
   ctx.arg.mipsGotSize = args::getInteger(args, OPT_mips_got_size, 0xfff0);
+  ctx.arg.gotPartitionThreshold =
+      args::getInteger(args, OPT_got_partition_threshold, 0x80000000LL);
   ctx.arg.mergeArmExidx =
       args.hasFlag(OPT_merge_exidx_entries, OPT_no_merge_exidx_entries, true);
   ctx.arg.mmapOutputFile =

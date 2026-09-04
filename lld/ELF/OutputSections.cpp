@@ -110,6 +110,8 @@ void OutputSection::recordSection(InputSectionBase *isec) {
     commands.push_back(make<InputSectionDescription>(""));
   auto *isd = cast<InputSectionDescription>(commands.back());
   isd->sectionBases.push_back(isec);
+  accumulatedSize = alignToPowerOf2(accumulatedSize, isec->addralign);
+  accumulatedSize += isec->getSize();
 }
 
 // Update fields (type, flags, alignment, etc) according to the InputSection
@@ -846,6 +848,20 @@ InputSection *elf::getFirstInputSection(const OutputSection *os) {
       if (!isd->sections.empty())
         return isd->sections[0];
   return nullptr;
+}
+
+bool elf::isGotPartitionSection(const OutputSection &os) {
+  for (SectionCommand *cmd : os.commands) {
+    if (auto *isd = dyn_cast<InputSectionDescription>(cmd)) {
+      for (InputSectionBase *s : isd->sectionBases)
+        if (isa<GotPartitionSection>(s))
+          return true;
+      for (InputSection *s : isd->sections)
+        if (isa<GotPartitionSection>(s))
+          return true;
+    }
+  }
+  return false;
 }
 
 ArrayRef<InputSection *>

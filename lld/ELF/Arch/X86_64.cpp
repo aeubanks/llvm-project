@@ -505,6 +505,9 @@ void X86_64::relaxCFIJumpTables() const {
 }
 
 bool X86_64::relaxOnce(int pass) const {
+  const int64_t threshold =
+      std::min<uint64_t>(0x80000000ULL, ctx.arg.gotPartitionThreshold);
+
   uint64_t minVA = UINT64_MAX, maxVA = 0;
   for (OutputSection *osec : ctx.outputSections) {
     if (!(osec->flags & SHF_ALLOC))
@@ -515,36 +518,59 @@ bool X86_64::relaxOnce(int pass) const {
   // If the max VA is under 2^31, GOTPCRELX relocations cannot overflow. In
   // -pie/-shared, the condition can be relaxed to test the max VA difference as
   // there is no R_RELAX_GOT_PC_NOPIC.
-  if (isUInt<31>(maxVA) || (isUInt<31>(maxVA - minVA) && ctx.arg.isPic))
+  if (maxVA < (uint64_t)threshold ||
+      ((maxVA - minVA) < (uint64_t)threshold && ctx.arg.isPic))
     return false;
 
   SmallVector<InputSection *, 0> storage;
   bool changed = false;
+
   for (OutputSection *osec : ctx.outputSections) {
     if (!(osec->flags & SHF_EXECINSTR))
       continue;
     for (InputSection *sec : getInputSections(*osec, storage)) {
-      for (Relocation &rel : sec->relocs()) {
-        if (rel.expr != R_RELAX_GOT_PC && rel.expr != R_RELAX_GOT_PC_NOPIC)
-          continue;
-        assert(rel.addend == -4);
+      if (isa<SyntheticSection>(sec))
+        continue;
 
-        Relocation rel1 = rel;
-        rel1.addend = rel.expr == R_RELAX_GOT_PC_NOPIC ? 0 : -4;
-        uint64_t v = sec->getRelocTargetVA(ctx, rel1,
-                                           sec->getOutputSection()->addr +
-                                               sec->outSecOff + rel.offset);
-        if (isInt<32>(v))
-          continue;
-        if (rel.sym->auxIdx == 0) {
-          rel.sym->allocateAux(ctx);
-          addGotEntry(ctx, *rel.sym);
-          changed = true;
+      for (Relocation &rel : sec->relocs()) {
+        uint64_t loc = osec->addr + sec->outSecOff + rel.offset;
+        if (rel.expr == R_RELAX_GOT_PC || rel.expr == R_RELAX_GOT_PC_NOPIC) {
+          assert(rel.addend == -4);
+          Relocation rel1 = rel;
+          rel1.addend = rel.expr == R_RELAX_GOT_PC_NOPIC ? 0 : -4;
+          uint64_t v = sec->getRelocTargetVA(ctx, rel1, loc);
+          int64_t dist = (int64_t)v;
+          bool inRange = rel.expr == R_RELAX_GOT_PC_NOPIC
+                             ? isInt<32>(v)
+                             : dist >= -threshold && dist < threshold;
+
+          if (!inRange) {
+            if (rel.sym->auxIdx == 0) {
+              rel.sym->allocateAux(ctx);
+              addGotEntry(ctx, *rel.sym);
+              changed = true;
+            }
+            rel.expr = R_GOT_PC;
+          }
         }
-        rel.expr = R_GOT_PC;
+
+        if (rel.expr == R_GOT_PC) {
+          uint64_t g = rel.sym->getGotVA(ctx);
+          int64_t dist = g - loc;
+
+          if (dist < -threshold || dist >= threshold) {
+            if (GotPartitionSection *gp = osec->gotPartition) {
+              rel.sym = gp->addEntry(*rel.sym);
+              rel.expr = R_PC;
+              rel.type = R_X86_64_PC32;
+              changed = true;
+            }
+          }
+        }
       }
     }
   }
+
   return changed;
 }
 

@@ -20,6 +20,7 @@
 namespace lld::elf {
 
 struct PhdrEntry;
+class GotPartitionSection;
 
 struct CompressedData {
   std::unique_ptr<SmallVector<uint8_t, 0>[]> shards;
@@ -64,10 +65,15 @@ public:
   // it may have a non-null value.
   OutputSection *relocationSection = nullptr;
 
+  // Partitioned GOT section associated with this section (if x86-64 GOT
+  // partitioning is used).
+  GotPartitionSection *gotPartition = nullptr;
+
   // Initially this field is the number of InputSections that have been added to
   // the OutputSection so far. Later on, after a call to assignAddresses, it
   // corresponds to the Elf_Shdr member.
   uint64_t size = 0;
+  uint64_t accumulatedSize = 0;
 
   // The following fields correspond to Elf_Shdr members.
   uint64_t offset = 0;
@@ -168,6 +174,8 @@ struct SectionClassDesc : SectionCommand {
 int getPriority(StringRef s);
 
 InputSection *getFirstInputSection(const OutputSection *os);
+bool isGotPartitionSection(const OutputSection &os);
+
 llvm::ArrayRef<InputSection *>
 getInputSections(const OutputSection &os,
                  SmallVector<InputSection *, 0> &storage);

@@ -15,6 +15,6 @@ entry:
 ; CHECK-SMALL-LABEL:  <_start>:
 ; CHECK-SMALL: movl    ${{.*}}, %eax
 ; CHECK-LARGE-LABEL: <_start>:
-; CHECK-LARGE: movabsq ${{.*}}, %rax
+; CHECK-LARGE: leaq {{.*}}(%rip), %rax
     ret ptr @data
 }
