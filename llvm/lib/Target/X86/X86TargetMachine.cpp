@@ -178,7 +178,7 @@ getEffectiveX86CodeModel(const Triple &TT, std::optional<CodeModel::Model> CM,
     return *CM;
   }
   if (JIT)
-    return Is64Bit ? CodeModel::Large : CodeModel::Small;
+    return Is64Bit ? CodeModel::JIT : CodeModel::Small;
   return CodeModel::Small;
 }
 

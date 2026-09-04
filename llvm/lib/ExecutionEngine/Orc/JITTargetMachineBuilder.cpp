@@ -116,6 +116,9 @@ void JITTargetMachineBuilderPrinter::print(raw_ostream &OS) const {
     case CodeModel::Large:
       OS << "Large";
       break;
+    case CodeModel::JIT:
+      OS << "JIT";
+      break;
     }
   } else
     OS << "unspecified (will use target default)";

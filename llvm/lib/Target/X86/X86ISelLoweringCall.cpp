@@ -434,7 +434,8 @@ unsigned X86TargetLowering::getJumpTableEncoding() const {
   if (isPositionIndependent() && Subtarget.isPICStyleGOT())
     return MachineJumpTableInfo::EK_Custom32;
   if (isPositionIndependent() &&
-      getTargetMachine().getCodeModel() == CodeModel::Large &&
+      (getTargetMachine().getCodeModel() == CodeModel::Large ||
+       getTargetMachine().getCodeModel() == CodeModel::JIT) &&
       !Subtarget.isTargetCOFF())
     return MachineJumpTableInfo::EK_LabelDifference64;
 
@@ -503,7 +504,8 @@ getPICJumpTableRelocBaseExpr(const MachineFunction *MF, unsigned JTI,
   // X86-64 uses RIP relative addressing based on the jump table label.
   if (Subtarget.isPICStyleRIPRel() ||
       (Subtarget.is64Bit() &&
-       getTargetMachine().getCodeModel() == CodeModel::Large))
+       (getTargetMachine().getCodeModel() == CodeModel::Large ||
+        getTargetMachine().getCodeModel() == CodeModel::JIT)))
     return TargetLowering::getPICJumpTableRelocBaseExpr(MF, JTI, Ctx);
 
   // Otherwise, the reference is relative to the PIC base.
@@ -2572,8 +2574,9 @@ X86TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
 
   bool IsImpCall = false;
   bool IsCFGuardCall = false;
-  if (DAG.getTarget().getCodeModel() == CodeModel::Large) {
-    assert(Is64Bit && "Large code model is only legal in 64-bit mode.");
+  if (DAG.getTarget().getCodeModel() == CodeModel::Large ||
+      DAG.getTarget().getCodeModel() == CodeModel::JIT) {
+    assert(Is64Bit && "Large/JIT code model is only legal in 64-bit mode.");
     // In the 64-bit large code model, we have to make all calls
     // through a register, since the call instruction's 32-bit
     // pc-relative offset may not be large enough to hold the whole

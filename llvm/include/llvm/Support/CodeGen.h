@@ -29,7 +29,7 @@ namespace llvm {
   // Code model types.
   namespace CodeModel {
     // Sync changes with CodeGenCWrappers.h.
-    enum Model { Tiny, Small, Kernel, Medium, Large };
+    enum Model { Tiny, Small, Kernel, Medium, Large, JIT };
   }
 
   namespace PICLevel {

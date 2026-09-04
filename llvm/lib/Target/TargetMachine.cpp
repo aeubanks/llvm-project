@@ -59,9 +59,12 @@ bool TargetMachine::isLargeDataSize(uint64_t Size) const {
     return false;
 
   if (!getTargetTriple().isOSBinFormatELF())
-    return getCodeModel() == CodeModel::Large;
+    return getCodeModel() == CodeModel::Large ||
+           getCodeModel() == CodeModel::JIT;
 
-  if (getCodeModel() == CodeModel::Medium || getCodeModel() == CodeModel::Large)
+  if (getCodeModel() == CodeModel::Medium ||
+      getCodeModel() == CodeModel::Large ||
+      getCodeModel() == CodeModel::JIT)
     return Size == 0 || Size > LargeDataThreshold;
 
   return false;
@@ -75,7 +78,8 @@ bool TargetMachine::isLargeGlobalValue(const GlobalValue *GVal) const {
   // the large code model is mostly used for JIT compilation, just look at the
   // code model.
   if (!getTargetTriple().isOSBinFormatELF())
-    return getCodeModel() == CodeModel::Large;
+    return getCodeModel() == CodeModel::Large ||
+           getCodeModel() == CodeModel::JIT;
 
   auto *GO = GVal->getAliaseeObject();
 
@@ -97,7 +101,8 @@ bool TargetMachine::isLargeGlobalValue(const GlobalValue *GVal) const {
       StringRef Name = GO->getSection();
       return IsPrefix(Name, ".ltext");
     }
-    return getCodeModel() == CodeModel::Large;
+    return getCodeModel() == CodeModel::Large ||
+           getCodeModel() == CodeModel::JIT;
   }
 
   if (GV->isThreadLocal())
@@ -129,7 +134,8 @@ bool TargetMachine::isLargeGlobalValue(const GlobalValue *GVal) const {
 
   // Respect large data threshold for medium and large code models.
   if (getCodeModel() == CodeModel::Medium ||
-      getCodeModel() == CodeModel::Large) {
+      getCodeModel() == CodeModel::Large ||
+      getCodeModel() == CodeModel::JIT) {
     if (!GV->getValueType()->isSized())
       return true;
     // Linker defined start/stop symbols can point to arbitrary points in the
@@ -175,6 +181,7 @@ uint64_t TargetMachine::getMaxCodeSize() const {
   case CodeModel::Medium:
     return llvm::maxUIntN(31);
   case CodeModel::Large:
+  case CodeModel::JIT:
     return llvm::maxUIntN(64);
   }
   llvm_unreachable("Unhandled CodeModel enum");

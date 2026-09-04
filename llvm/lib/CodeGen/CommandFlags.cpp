@@ -172,7 +172,8 @@ codegen::RegisterCodeGenFlags::RegisterCodeGenFlags() {
                  clEnumValN(CodeModel::Small, "small", "Small code model"),
                  clEnumValN(CodeModel::Kernel, "kernel", "Kernel code model"),
                  clEnumValN(CodeModel::Medium, "medium", "Medium code model"),
-                 clEnumValN(CodeModel::Large, "large", "Large code model")));
+                 clEnumValN(CodeModel::Large, "large", "Large code model"),
+                 clEnumValN(CodeModel::JIT, "jit", "JIT code model")));
   CGBINDOPT(CodeModel);
 
   static cl::opt<uint64_t> LargeDataThreshold(

@@ -1161,6 +1161,7 @@ void ARMFrameLowering::emitPrologue(MachineFunction &MF,
           .setMIFlags(MachineInstr::FrameSetup);
       break;
     case CodeModel::Large:
+    case CodeModel::JIT:
       BuildMI(MBB, MBBI, dl, TII.get(ARM::t2MOVi32imm), ARM::R12)
           .addExternalSymbol(ChkStk)
           .setMIFlags(MachineInstr::FrameSetup);
