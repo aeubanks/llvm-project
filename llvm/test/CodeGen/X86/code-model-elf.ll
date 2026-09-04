@@ -75,7 +75,7 @@ define dso_local ptr @lea_static_data() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_static_data:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $static_data, %rax
+; LARGE-STATIC-NEXT:    movq static_data@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_static_data:
@@ -97,22 +97,12 @@ define dso_local ptr @lea_static_data() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_static_data:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L0$pb:
-; LARGE-PIC-NEXT:    leaq .L0$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L0$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $static_data@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq static_data@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_static_data:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L0$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L0$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L0$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $static_data@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq static_data@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @static_data
 }
@@ -130,7 +120,7 @@ define dso_local ptr @lea_static_data_relro() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_static_data_relro:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $static_data_relro, %rax
+; LARGE-STATIC-NEXT:    movq static_data_relro@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_static_data_relro:
@@ -150,22 +140,12 @@ define dso_local ptr @lea_static_data_relro() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_static_data_relro:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L1$pb:
-; LARGE-PIC-NEXT:    leaq .L1$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L1$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $static_data_relro@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq static_data_relro@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_static_data_relro:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L1$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L1$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L1$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $static_data_relro@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq static_data_relro@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @static_data_relro
 }
@@ -183,7 +163,7 @@ define dso_local ptr @lea_global_data() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_global_data:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $global_data, %rax
+; LARGE-STATIC-NEXT:    movq global_data@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_global_data:
@@ -205,76 +185,21 @@ define dso_local ptr @lea_global_data() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_global_data:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L2$pb:
-; LARGE-PIC-NEXT:    leaq .L2$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L2$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $global_data@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq global_data@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_global_data:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L2$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L2$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L2$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $global_data@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq global_data@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @global_data
 }
 
 define dso_local ptr @lea_extern_data() #0 {
-; SMALL-STATIC-LABEL: lea_extern_data:
-; SMALL-STATIC:       # %bb.0:
-; SMALL-STATIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; SMALL-STATIC-NEXT:    retq
-;
-; MEDIUM-STATIC-LABEL: lea_extern_data:
-; MEDIUM-STATIC:       # %bb.0:
-; MEDIUM-STATIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; MEDIUM-STATIC-NEXT:    retq
-;
-; LARGE-STATIC-LABEL: lea_extern_data:
-; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $extern_data, %rax
-; LARGE-STATIC-NEXT:    retq
-;
-; SMALL-PIC-LABEL: lea_extern_data:
-; SMALL-PIC:       # %bb.0:
-; SMALL-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; SMALL-PIC-NEXT:    retq
-;
-; MEDIUM-SMALL-DATA-PIC-LABEL: lea_extern_data:
-; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
-; MEDIUM-SMALL-DATA-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; MEDIUM-SMALL-DATA-PIC-NEXT:    retq
-;
-; MEDIUM-PIC-LABEL: lea_extern_data:
-; MEDIUM-PIC:       # %bb.0:
-; MEDIUM-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; MEDIUM-PIC-NEXT:    retq
-;
-; LARGE-PIC-LABEL: lea_extern_data:
-; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L3$pb:
-; LARGE-PIC-NEXT:    leaq .L3$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L3$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $extern_data@GOT, %rax
-; LARGE-PIC-NEXT:    movq (%rcx,%rax), %rax
-; LARGE-PIC-NEXT:    retq
-;
-; LARGE-SMALL-DATA-PIC-LABEL: lea_extern_data:
-; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L3$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L3$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L3$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $extern_data@GOT, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movq (%rcx,%rax), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    retq
+; CHECK-LABEL: lea_extern_data:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
+; CHECK-NEXT:    retq
   ret ptr @extern_data
 }
 
@@ -291,7 +216,7 @@ define dso_local ptr @lea_unknown_size_data() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_unknown_size_data:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $unknown_size_data, %rax
+; LARGE-STATIC-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_unknown_size_data:
@@ -315,22 +240,12 @@ define dso_local ptr @lea_unknown_size_data() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_unknown_size_data:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L4$pb:
-; LARGE-PIC-NEXT:    leaq .L4$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L4$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $unknown_size_data@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_unknown_size_data:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L4$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L4$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L4$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $unknown_size_data@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @unknown_size_data
 }
@@ -348,7 +263,7 @@ define dso_local ptr @lea_forced_small_data() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_forced_small_data:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $forced_small_data, %rax
+; LARGE-STATIC-NEXT:    movq forced_small_data@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_forced_small_data:
@@ -368,22 +283,12 @@ define dso_local ptr @lea_forced_small_data() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_forced_small_data:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L5$pb:
-; LARGE-PIC-NEXT:    leaq .L5$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L5$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $forced_small_data@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq forced_small_data@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_forced_small_data:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L5$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L5$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L5$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $forced_small_data@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq forced_small_data@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @forced_small_data
 }
@@ -401,8 +306,8 @@ define dso_local i32 @load_forced_small_data() #0 {
 ;
 ; LARGE-STATIC-LABEL: load_forced_small_data:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $forced_small_data+8, %rax
-; LARGE-STATIC-NEXT:    movl (%rax), %eax
+; LARGE-STATIC-NEXT:    movq forced_small_data@GOTPCREL(%rip), %rax
+; LARGE-STATIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: load_forced_small_data:
@@ -422,22 +327,14 @@ define dso_local i32 @load_forced_small_data() #0 {
 ;
 ; LARGE-PIC-LABEL: load_forced_small_data:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L6$pb:
-; LARGE-PIC-NEXT:    leaq .L6$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L6$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $forced_small_data@GOTOFF, %rax
-; LARGE-PIC-NEXT:    movl 8(%rcx,%rax), %eax
+; LARGE-PIC-NEXT:    movq forced_small_data@GOTPCREL(%rip), %rax
+; LARGE-PIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: load_forced_small_data:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L6$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L6$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L6$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $forced_small_data@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movl 8(%rcx,%rax), %eax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq forced_small_data@GOTPCREL(%rip), %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   %rv = load i32, ptr getelementptr inbounds (i32, ptr @forced_small_data, i64 2)
   ret i32 %rv
@@ -456,7 +353,7 @@ define dso_local ptr @lea_forced_large_data() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_forced_large_data:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $forced_large_data, %rax
+; LARGE-STATIC-NEXT:    movq forced_large_data@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_forced_large_data:
@@ -482,22 +379,12 @@ define dso_local ptr @lea_forced_large_data() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_forced_large_data:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L7$pb:
-; LARGE-PIC-NEXT:    leaq .L7$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L7$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $forced_large_data@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq forced_large_data@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_forced_large_data:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L7$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L7$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L7$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $forced_large_data@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq forced_large_data@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @forced_large_data
 }
@@ -517,8 +404,8 @@ define dso_local i32 @load_forced_large_data() #0 {
 ;
 ; LARGE-STATIC-LABEL: load_forced_large_data:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $forced_large_data+8, %rax
-; LARGE-STATIC-NEXT:    movl (%rax), %eax
+; LARGE-STATIC-NEXT:    movq forced_large_data@GOTPCREL(%rip), %rax
+; LARGE-STATIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: load_forced_large_data:
@@ -544,22 +431,14 @@ define dso_local i32 @load_forced_large_data() #0 {
 ;
 ; LARGE-PIC-LABEL: load_forced_large_data:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L8$pb:
-; LARGE-PIC-NEXT:    leaq .L8$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L8$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $forced_large_data@GOTOFF, %rax
-; LARGE-PIC-NEXT:    movl 8(%rcx,%rax), %eax
+; LARGE-PIC-NEXT:    movq forced_large_data@GOTPCREL(%rip), %rax
+; LARGE-PIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: load_forced_large_data:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L8$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L8$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L8$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $forced_large_data@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movl 8(%rcx,%rax), %eax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq forced_large_data@GOTPCREL(%rip), %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   %rv = load i32, ptr getelementptr inbounds (i32, ptr @forced_large_data, i64 2)
   ret i32 %rv
@@ -579,8 +458,8 @@ define dso_local i32 @load_global_data() #0 {
 ;
 ; LARGE-STATIC-LABEL: load_global_data:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $global_data+8, %rax
-; LARGE-STATIC-NEXT:    movl (%rax), %eax
+; LARGE-STATIC-NEXT:    movq global_data@GOTPCREL(%rip), %rax
+; LARGE-STATIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: load_global_data:
@@ -602,85 +481,25 @@ define dso_local i32 @load_global_data() #0 {
 ;
 ; LARGE-PIC-LABEL: load_global_data:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L9$pb:
-; LARGE-PIC-NEXT:    leaq .L9$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L9$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $global_data@GOTOFF, %rax
-; LARGE-PIC-NEXT:    movl 8(%rcx,%rax), %eax
+; LARGE-PIC-NEXT:    movq global_data@GOTPCREL(%rip), %rax
+; LARGE-PIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: load_global_data:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L9$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L9$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L9$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $global_data@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movl 8(%rcx,%rax), %eax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq global_data@GOTPCREL(%rip), %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   %rv = load i32, ptr getelementptr inbounds ([10 x i32], ptr @global_data, i64 0, i64 2)
   ret i32 %rv
 }
 
 define dso_local i32 @load_extern_data() #0 {
-; SMALL-STATIC-LABEL: load_extern_data:
-; SMALL-STATIC:       # %bb.0:
-; SMALL-STATIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; SMALL-STATIC-NEXT:    movl 8(%rax), %eax
-; SMALL-STATIC-NEXT:    retq
-;
-; MEDIUM-STATIC-LABEL: load_extern_data:
-; MEDIUM-STATIC:       # %bb.0:
-; MEDIUM-STATIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; MEDIUM-STATIC-NEXT:    movl 8(%rax), %eax
-; MEDIUM-STATIC-NEXT:    retq
-;
-; LARGE-STATIC-LABEL: load_extern_data:
-; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $extern_data, %rax
-; LARGE-STATIC-NEXT:    movl 8(%rax), %eax
-; LARGE-STATIC-NEXT:    retq
-;
-; SMALL-PIC-LABEL: load_extern_data:
-; SMALL-PIC:       # %bb.0:
-; SMALL-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; SMALL-PIC-NEXT:    movl 8(%rax), %eax
-; SMALL-PIC-NEXT:    retq
-;
-; MEDIUM-SMALL-DATA-PIC-LABEL: load_extern_data:
-; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
-; MEDIUM-SMALL-DATA-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; MEDIUM-SMALL-DATA-PIC-NEXT:    movl 8(%rax), %eax
-; MEDIUM-SMALL-DATA-PIC-NEXT:    retq
-;
-; MEDIUM-PIC-LABEL: load_extern_data:
-; MEDIUM-PIC:       # %bb.0:
-; MEDIUM-PIC-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
-; MEDIUM-PIC-NEXT:    movl 8(%rax), %eax
-; MEDIUM-PIC-NEXT:    retq
-;
-; LARGE-PIC-LABEL: load_extern_data:
-; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L10$pb:
-; LARGE-PIC-NEXT:    leaq .L10$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L10$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $extern_data@GOT, %rax
-; LARGE-PIC-NEXT:    movq (%rcx,%rax), %rax
-; LARGE-PIC-NEXT:    movl 8(%rax), %eax
-; LARGE-PIC-NEXT:    retq
-;
-; LARGE-SMALL-DATA-PIC-LABEL: load_extern_data:
-; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L10$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L10$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L10$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $extern_data@GOT, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movq (%rcx,%rax), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movl 8(%rax), %eax
-; LARGE-SMALL-DATA-PIC-NEXT:    retq
+; CHECK-LABEL: load_extern_data:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    movq extern_data@GOTPCREL(%rip), %rax
+; CHECK-NEXT:    movl 8(%rax), %eax
+; CHECK-NEXT:    retq
   %rv = load i32, ptr getelementptr inbounds ([10 x i32], ptr @extern_data, i64 0, i64 2)
   ret i32 %rv
 }
@@ -699,8 +518,8 @@ define dso_local i32 @load_unknown_size_data() #0 {
 ;
 ; LARGE-STATIC-LABEL: load_unknown_size_data:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $unknown_size_data+8, %rax
-; LARGE-STATIC-NEXT:    movl (%rax), %eax
+; LARGE-STATIC-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
+; LARGE-STATIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: load_unknown_size_data:
@@ -724,22 +543,14 @@ define dso_local i32 @load_unknown_size_data() #0 {
 ;
 ; LARGE-PIC-LABEL: load_unknown_size_data:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L11$pb:
-; LARGE-PIC-NEXT:    leaq .L11$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L11$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $unknown_size_data@GOTOFF, %rax
-; LARGE-PIC-NEXT:    movl 8(%rcx,%rax), %eax
+; LARGE-PIC-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
+; LARGE-PIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: load_unknown_size_data:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L11$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L11$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L11$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $unknown_size_data@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movl 8(%rcx,%rax), %eax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq unknown_size_data@GOTPCREL(%rip), %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movl 8(%rax), %eax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   %rv = load i32, ptr getelementptr inbounds (i32, ptr @unknown_size_data, i64 2)
   ret i32 %rv
@@ -759,7 +570,7 @@ define dso_local i1 @load_bool() #0 {
 ;
 ; LARGE-STATIC-LABEL: load_bool:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $bool, %rax
+; LARGE-STATIC-NEXT:    movq bool@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    movzbl (%rax), %eax
 ; LARGE-STATIC-NEXT:    retq
 ;
@@ -782,22 +593,14 @@ define dso_local i1 @load_bool() #0 {
 ;
 ; LARGE-PIC-LABEL: load_bool:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L12$pb:
-; LARGE-PIC-NEXT:    leaq .L12$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L12$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $bool@GOTOFF, %rax
-; LARGE-PIC-NEXT:    movzbl (%rcx,%rax), %eax
+; LARGE-PIC-NEXT:    movq bool@GOTPCREL(%rip), %rax
+; LARGE-PIC-NEXT:    movzbl (%rax), %eax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: load_bool:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L12$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L12$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L12$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $bool@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movzbl (%rcx,%rax), %eax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq bool@GOTPCREL(%rip), %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movzbl (%rax), %eax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   %rv = load i1, ptr @bool
   ret i1 %rv
@@ -816,7 +619,7 @@ define dso_local ptr @lea_opaque() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_opaque:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $opaque, %rax
+; LARGE-STATIC-NEXT:    movq opaque@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_opaque:
@@ -840,22 +643,12 @@ define dso_local ptr @lea_opaque() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_opaque:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L13$pb:
-; LARGE-PIC-NEXT:    leaq .L13$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L13$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $opaque@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq opaque@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_opaque:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L13$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L13$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L13$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $opaque@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq opaque@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @opaque
 }
@@ -873,7 +666,7 @@ define dso_local ptr @lea_ehdr_start() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_ehdr_start:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $__ehdr_start, %rax
+; LARGE-STATIC-NEXT:    movq __ehdr_start@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_ehdr_start:
@@ -897,22 +690,12 @@ define dso_local ptr @lea_ehdr_start() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_ehdr_start:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L14$pb:
-; LARGE-PIC-NEXT:    leaq .L14$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L14$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $__ehdr_start@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq __ehdr_start@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_ehdr_start:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L14$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L14$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L14$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $__ehdr_start@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq __ehdr_start@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @__ehdr_start
 }
@@ -930,7 +713,7 @@ define dso_local ptr @lea_start_foo() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_start_foo:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $__start_foo, %rax
+; LARGE-STATIC-NEXT:    movq __start_foo@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_start_foo:
@@ -954,22 +737,12 @@ define dso_local ptr @lea_start_foo() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_start_foo:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L15$pb:
-; LARGE-PIC-NEXT:    leaq .L15$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L15$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $__start_foo@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq __start_foo@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_start_foo:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L15$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L15$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L15$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $__start_foo@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq __start_foo@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @__start_foo
 }
@@ -987,7 +760,7 @@ define dso_local ptr @lea_stop_foo() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_stop_foo:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $__stop_foo, %rax
+; LARGE-STATIC-NEXT:    movq __stop_foo@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_stop_foo:
@@ -1011,22 +784,12 @@ define dso_local ptr @lea_stop_foo() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_stop_foo:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L16$pb:
-; LARGE-PIC-NEXT:    leaq .L16$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L16$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $__stop_foo@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq __stop_foo@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_stop_foo:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L16$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L16$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L16$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $__stop_foo@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq __stop_foo@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @__stop_foo
 }
@@ -1072,7 +835,7 @@ define dso_local ptr @lea_static_fn() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_static_fn:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $static_fn, %rax
+; LARGE-STATIC-NEXT:    movq static_fn@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_static_fn:
@@ -1092,22 +855,12 @@ define dso_local ptr @lea_static_fn() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_static_fn:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L20$pb:
-; LARGE-PIC-NEXT:    leaq .L20$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L20$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $static_fn@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq static_fn@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_static_fn:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L20$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L20$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L20$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $static_fn@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq static_fn@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @static_fn
 }
@@ -1125,7 +878,7 @@ define dso_local ptr @lea_global_fn() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_global_fn:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $global_fn, %rax
+; LARGE-STATIC-NEXT:    movq global_fn@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_global_fn:
@@ -1145,129 +898,29 @@ define dso_local ptr @lea_global_fn() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_global_fn:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L21$pb:
-; LARGE-PIC-NEXT:    leaq .L21$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L21$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $global_fn@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq global_fn@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_global_fn:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L21$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L21$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L21$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $global_fn@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq global_fn@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @global_fn
 }
 
 define dso_local ptr @lea_extern_fn() #0 {
-; SMALL-STATIC-LABEL: lea_extern_fn:
-; SMALL-STATIC:       # %bb.0:
-; SMALL-STATIC-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
-; SMALL-STATIC-NEXT:    retq
-;
-; MEDIUM-STATIC-LABEL: lea_extern_fn:
-; MEDIUM-STATIC:       # %bb.0:
-; MEDIUM-STATIC-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
-; MEDIUM-STATIC-NEXT:    retq
-;
-; LARGE-STATIC-LABEL: lea_extern_fn:
-; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $extern_fn, %rax
-; LARGE-STATIC-NEXT:    retq
-;
-; SMALL-PIC-LABEL: lea_extern_fn:
-; SMALL-PIC:       # %bb.0:
-; SMALL-PIC-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
-; SMALL-PIC-NEXT:    retq
-;
-; MEDIUM-SMALL-DATA-PIC-LABEL: lea_extern_fn:
-; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
-; MEDIUM-SMALL-DATA-PIC-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
-; MEDIUM-SMALL-DATA-PIC-NEXT:    retq
-;
-; MEDIUM-PIC-LABEL: lea_extern_fn:
-; MEDIUM-PIC:       # %bb.0:
-; MEDIUM-PIC-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
-; MEDIUM-PIC-NEXT:    retq
-;
-; LARGE-PIC-LABEL: lea_extern_fn:
-; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L22$pb:
-; LARGE-PIC-NEXT:    leaq .L22$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L22$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $extern_fn@GOT, %rax
-; LARGE-PIC-NEXT:    movq (%rcx,%rax), %rax
-; LARGE-PIC-NEXT:    retq
-;
-; LARGE-SMALL-DATA-PIC-LABEL: lea_extern_fn:
-; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L22$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L22$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L22$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $extern_fn@GOT, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movq (%rcx,%rax), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    retq
+; CHECK-LABEL: lea_extern_fn:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    movq extern_fn@GOTPCREL(%rip), %rax
+; CHECK-NEXT:    retq
   ret ptr @extern_fn
 }
 
 define dso_local ptr @lea_ifunc() #0 {
-; SMALL-STATIC-LABEL: lea_ifunc:
-; SMALL-STATIC:       # %bb.0:
-; SMALL-STATIC-NEXT:    movq ifunc_func@GOTPCREL(%rip), %rax
-; SMALL-STATIC-NEXT:    retq
-;
-; MEDIUM-STATIC-LABEL: lea_ifunc:
-; MEDIUM-STATIC:       # %bb.0:
-; MEDIUM-STATIC-NEXT:    movq ifunc_func@GOTPCREL(%rip), %rax
-; MEDIUM-STATIC-NEXT:    retq
-;
-; LARGE-STATIC-LABEL: lea_ifunc:
-; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $ifunc_func, %rax
-; LARGE-STATIC-NEXT:    retq
-;
-; SMALL-PIC-LABEL: lea_ifunc:
-; SMALL-PIC:       # %bb.0:
-; SMALL-PIC-NEXT:    movq ifunc_func@GOTPCREL(%rip), %rax
-; SMALL-PIC-NEXT:    retq
-;
-; MEDIUM-SMALL-DATA-PIC-LABEL: lea_ifunc:
-; MEDIUM-SMALL-DATA-PIC:       # %bb.0:
-; MEDIUM-SMALL-DATA-PIC-NEXT:    movq ifunc_func@GOTPCREL(%rip), %rax
-; MEDIUM-SMALL-DATA-PIC-NEXT:    retq
-;
-; MEDIUM-PIC-LABEL: lea_ifunc:
-; MEDIUM-PIC:       # %bb.0:
-; MEDIUM-PIC-NEXT:    movq ifunc_func@GOTPCREL(%rip), %rax
-; MEDIUM-PIC-NEXT:    retq
-;
-; LARGE-PIC-LABEL: lea_ifunc:
-; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L23$pb:
-; LARGE-PIC-NEXT:    leaq .L23$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L23$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $ifunc_func@GOT, %rax
-; LARGE-PIC-NEXT:    movq (%rcx,%rax), %rax
-; LARGE-PIC-NEXT:    retq
-;
-; LARGE-SMALL-DATA-PIC-LABEL: lea_ifunc:
-; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L23$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L23$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L23$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $ifunc_func@GOT, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movq (%rcx,%rax), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    retq
+; CHECK-LABEL: lea_ifunc:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    movq ifunc_func@GOTPCREL(%rip), %rax
+; CHECK-NEXT:    retq
   ret ptr @ifunc_func
 }
 
@@ -1284,7 +937,7 @@ define dso_local ptr @lea_dso_local_ifunc() #0 {
 ;
 ; LARGE-STATIC-LABEL: lea_dso_local_ifunc:
 ; LARGE-STATIC:       # %bb.0:
-; LARGE-STATIC-NEXT:    movabsq $dso_local_ifunc_func, %rax
+; LARGE-STATIC-NEXT:    movq dso_local_ifunc_func@GOTPCREL(%rip), %rax
 ; LARGE-STATIC-NEXT:    retq
 ;
 ; SMALL-PIC-LABEL: lea_dso_local_ifunc:
@@ -1304,22 +957,12 @@ define dso_local ptr @lea_dso_local_ifunc() #0 {
 ;
 ; LARGE-PIC-LABEL: lea_dso_local_ifunc:
 ; LARGE-PIC:       # %bb.0:
-; LARGE-PIC-NEXT:  .L24$pb:
-; LARGE-PIC-NEXT:    leaq .L24$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L24$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
-; LARGE-PIC-NEXT:    movabsq $dso_local_ifunc_func@GOTOFF, %rax
-; LARGE-PIC-NEXT:    addq %rcx, %rax
+; LARGE-PIC-NEXT:    movq dso_local_ifunc_func@GOTPCREL(%rip), %rax
 ; LARGE-PIC-NEXT:    retq
 ;
 ; LARGE-SMALL-DATA-PIC-LABEL: lea_dso_local_ifunc:
 ; LARGE-SMALL-DATA-PIC:       # %bb.0:
-; LARGE-SMALL-DATA-PIC-NEXT:  .L24$pb:
-; LARGE-SMALL-DATA-PIC-NEXT:    leaq .L24$pb(%rip), %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L24$pb, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rax, %rcx
-; LARGE-SMALL-DATA-PIC-NEXT:    movabsq $dso_local_ifunc_func@GOTOFF, %rax
-; LARGE-SMALL-DATA-PIC-NEXT:    addq %rcx, %rax
+; LARGE-SMALL-DATA-PIC-NEXT:    movq dso_local_ifunc_func@GOTPCREL(%rip), %rax
 ; LARGE-SMALL-DATA-PIC-NEXT:    retq
   ret ptr @dso_local_ifunc_func
 }
