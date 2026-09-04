@@ -368,6 +368,7 @@ public:
   ExprValue getSymbolValue(StringRef name, const Twine &loc);
 
   void addOrphanSections();
+  void partitionLargeExecSections();
   void diagnoseOrphanHandling() const;
   void diagnoseMissingSGSectionAddress() const;
   void adjustOutputSections();

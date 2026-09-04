@@ -774,6 +774,38 @@ LinkerScript::createInputSectionList(OutputSection &outCmd) {
   return ret;
 }
 
+// Start the section on a page not shared with the preceding section.
+// fixSectionAlignments() does this when there is no SECTIONS command.
+static void setPageAdvanceAddrExpr(Ctx &ctx, OutputSection *osec) {
+  osec->addrExpr = [&ctx, osec] {
+    uint64_t dot = ctx.script->getDot();
+    uint64_t addr =
+        alignToPowerOf2(dot, ctx.arg.maxPageSize) + dot % ctx.arg.maxPageSize;
+    return alignToPowerOf2(addr, osec->addralign);
+  };
+}
+
+static std::pair<OutputDesc *, GotPartitionSection *>
+createGotPartitionSection(Ctx &ctx, OutputSection *parentSec, uint32_t index) {
+  StringRef parentName = parentSec->name;
+  StringRef ltextName =
+      parentName.starts_with(".") ? parentName.drop_front(1) : parentName;
+  OutputDesc *osd = ctx.script->createOutputSection(
+      ctx.saver.save(".got." + ltextName + "." + Twine(index)), "<internal>");
+  osd->osec.type = SHT_PROGBITS;
+  osd->osec.flags = SHF_ALLOC | SHF_WRITE | SHF_X86_64_LARGE;
+  osd->osec.addralign = 8;
+  setPageAdvanceAddrExpr(ctx, &osd->osec);
+  osd->osec.isGotPartition = true;
+
+  auto *gp = make<GotPartitionSection>(ctx, &osd->osec);
+  ctx.in.gotPartitions.push_back(gp);
+  osd->osec.recordSection(gp);
+  osd->osec.finalizeInputSections();
+
+  return {osd, gp};
+}
+
 // Create output sections described by SECTIONS commands.
 void LinkerScript::processSectionCommands() {
   auto process = [this](OutputSection *osec) {
@@ -1137,6 +1169,146 @@ void LinkerScript::addOrphanSections() {
     sectionCommands.insert(sectionCommands.begin(), v.begin(), v.end());
 }
 
+// x86-64 large code model: .ltext may be more than 2GiB away from .got, so
+// each chunk of large text needs a GOT nearby that it can reach. Split output
+// sections holding large executable input sections into chunks of at most
+// maxChunkSize, and place a GotPartitionSection between adjacent chunks. A
+// section that is not split still gets a GOT partition of its own, since it may
+// be far away from the primary .got.
+//
+// This runs after both processSectionCommands() and addOrphanSections(), so
+// every output section and its members are known. Only the placement of the
+// newly created output sections is specific to how the parent section was
+// created; see the comment at the bottom of the loop.
+void LinkerScript::partitionLargeExecSections() {
+  if (ctx.arg.emachine != EM_X86_64 || ctx.arg.relocatable)
+    return;
+  constexpr uint64_t largeExecFlags = SHF_EXECINSTR | SHF_X86_64_LARGE;
+  bool hasLargeExec = llvm::any_of(sectionCommands, [](SectionCommand *base) {
+    auto *osd = dyn_cast<OutputDesc>(base);
+    return osd && (osd->osec.flags & largeExecFlags) == largeExecFlags;
+  });
+  if (!hasLargeExec)
+    return;
+
+  const uint64_t maxChunkSize = ctx.arg.gotPartitionThreshold * 3 / 4;
+  SmallVector<SectionCommand *, 0> cmds;
+  bool changed = false;
+  for (SectionCommand *base : sectionCommands) {
+    cmds.push_back(base);
+    auto *osd = dyn_cast<OutputDesc>(base);
+    if (!osd)
+      continue;
+    OutputSection &osec = osd->osec;
+    if ((osec.flags & largeExecFlags) != largeExecFlags)
+      continue;
+
+    // Collect the members. Skip an output section containing commands other
+    // than input section descriptions (e.g. symbol assignments or BYTE), since
+    // we cannot tell which chunk those belong to.
+    SmallVector<InputSection *, 0> v;
+    bool hasLargeExecInput = false;
+    bool onlyIsd = true;
+    for (SectionCommand *cmd : osec.commands) {
+      auto *isd = dyn_cast<InputSectionDescription>(cmd);
+      if (!isd) {
+        onlyIsd = false;
+        break;
+      }
+      for (InputSection *s : isd->sections) {
+        hasLargeExecInput |= (s->flags & largeExecFlags) == largeExecFlags;
+        v.push_back(s);
+      }
+    }
+    if (!onlyIsd || !hasLargeExecInput)
+      continue;
+
+    // Compute the chunk boundaries. A new chunk starts right before we would
+    // go over `maxChunkSize` amount of text in one chunk.
+    SmallVector<size_t, 0> starts;
+    uint64_t curSize = 0;
+    for (auto [i, s] : llvm::enumerate(v)) {
+      if (curSize > 0 && curSize + s->getSize() > maxChunkSize) {
+        starts.push_back(i);
+        curSize = 0;
+      }
+      curSize = alignToPowerOf2(curSize, s->addralign) + s->getSize();
+    }
+
+    SmallVector<SectionCommand *, 0> newCmds;
+    if (starts.empty()) {
+      // No split needed; leave the existing commands alone.
+      auto [gpOsd, gp] = createGotPartitionSection(ctx, &osec, 0);
+      osec.gotPartition = gp;
+      newCmds.push_back(gpOsd);
+    } else {
+      // Redistribute the members over the chunks, creating a new output
+      // section for every chunk but the first.
+      osec.commands.clear();
+      osec.hasInputSections = false;
+      OutputSection *cur = &osec;
+      auto *isd = make<InputSectionDescription>("");
+      cur->commands.push_back(isd);
+      starts.push_back(v.size());
+      size_t i = 0;
+      for (auto [index, end] : llvm::enumerate(starts)) {
+        if (index) {
+          OutputDesc *newOsd = createOutputSection(
+              ctx.saver.save(osec.name + "." + Twine(index)), "<internal>");
+          OutputSection *newOsec = &newOsd->osec;
+          newOsec->type = osec.type;
+          newOsec->flags = osec.flags;
+          newOsec->addralign = osec.addralign;
+          newOsec->alignExpr = osec.alignExpr;
+          setPageAdvanceAddrExpr(ctx, newOsec);
+          newOsec->memoryRegionName = osec.memoryRegionName;
+          newOsec->lmaRegionName = osec.lmaRegionName;
+          newOsec->phdrs = osec.phdrs;
+
+          auto [gpOsd, gp] = createGotPartitionSection(ctx, &osec, index - 1);
+          cur->gotPartition = gp;
+          newOsec->gotPartition = gp;
+          newCmds.push_back(gpOsd);
+          newCmds.push_back(newOsd);
+
+          cur = newOsec;
+          isd = make<InputSectionDescription>("");
+          cur->commands.push_back(isd);
+        }
+        for (; i != end; ++i) {
+          isd->sections.push_back(v[i]);
+          cur->commitSection(v[i]);
+        }
+      }
+    }
+
+    // A script-placed section has a sectionIndex and its position in
+    // sectionCommands is final, so the new sections are inserted right after
+    // it and renumbered below. An orphan keeps sectionIndex == UINT32_MAX and
+    // is ordered later by sortRank; a GOT partition is given the same rank as
+    // the text around it (see getSectionRank), so the stable sort preserves
+    // the relative order they are appended in here.
+    bool isScriptSection = osec.sectionIndex != UINT32_MAX;
+    for (SectionCommand *cmd : newCmds) {
+      if (isScriptSection)
+        cast<OutputDesc>(cmd)->osec.sectionIndex = 0;
+      cmds.push_back(cmd);
+    }
+    changed = true;
+  }
+  if (!changed)
+    return;
+  sectionCommands = std::move(cmds);
+
+  // Renumber script-placed sections so that sectionIndex remains a unique
+  // increasing sequence.
+  size_t i = 0;
+  for (SectionCommand *base : sectionCommands)
+    if (auto *osd = dyn_cast<OutputDesc>(base))
+      if (osd->osec.sectionIndex != UINT32_MAX)
+        osd->osec.sectionIndex = i++;
+}
+
 void LinkerScript::diagnoseOrphanHandling() const {
   llvm::TimeTraceScope timeScope("Diagnose orphan sections");
   if (ctx.arg.orphanHandling == OrphanHandlingPolicy::Place ||
@@ -1383,6 +1555,11 @@ bool LinkerScript::assignOffsets(OutputSection *sec) {
 static bool isDiscardable(const OutputSection &sec) {
   if (sec.name == "/DISCARD/")
     return true;
+
+  // Do not discard GOT partition sections, as they will be populated during
+  // relaxation.
+  if (sec.isGotPartition)
+    return false;
 
   // We do not want to remove OutputSections with expressions that reference
   // symbols even if the OutputSection is empty. We want to ensure that the

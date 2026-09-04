@@ -570,6 +570,9 @@ static bool isRelroSection(Ctx &ctx, const OutputSection *sec) {
   if (!(flags & SHF_ALLOC) || !(flags & SHF_WRITE))
     return false;
 
+  if (sec->isGotPartition)
+    return true;
+
   // Once initialized, TLS data segments are used as data templates
   // for a thread-local storage. For each new thread, runtime
   // allocates memory for a TLS and copy templates there. No thread
@@ -685,6 +688,10 @@ unsigned elf::getSectionRank(Ctx &ctx, OutputSection &osec) {
   // places.
   bool isExec = osec.flags & SHF_EXECINSTR;
   bool isWrite = osec.flags & SHF_WRITE;
+  if (osec.isGotPartition) {
+    isExec = true;
+    isWrite = false;
+  }
   bool isLarge = osec.flags & SHF_X86_64_LARGE && ctx.arg.emachine == EM_X86_64;
 
   if (!isWrite && !isExec) {
@@ -1553,6 +1560,8 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
     }
 
     finalizeSynthetic(ctx, ctx.in.got.get());
+    for (GotPartitionSection *gp : ctx.in.gotPartitions)
+      finalizeSynthetic(ctx, gp);
     if (ctx.in.mipsGot)
       ctx.in.mipsGot->updateAllocSize(ctx);
 
@@ -1627,6 +1636,7 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
     if (errCount(ctx))
       break;
   }
+
   if (!ctx.arg.relocatable)
     ctx.target->finalizeRelax(pass);
 
@@ -1753,6 +1763,8 @@ template <class ELFT> void Writer<ELFT>::optimizeBasicBlockJumps() {
 
 // Sections that finalizeAddressDependentContent may add to.
 static bool mayGrowLate(Ctx &ctx, SyntheticSection *sec) {
+  if (isa<GotPartitionSection>(sec))
+    return true;
   // relaxOnce may add GOT entries that need relative relocations.
   if (ctx.arg.isPic && ctx.in.got && ctx.in.got->hasDeferredEntries &&
       sec == (ctx.in.relrDyn
@@ -2117,6 +2129,8 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
     finalizeSynthetic(ctx, ctx.in.shStrTab.get());
     finalizeSynthetic(ctx, ctx.in.strTab.get());
     finalizeSynthetic(ctx, ctx.in.got.get());
+    for (GotPartitionSection *gp : ctx.in.gotPartitions)
+      finalizeSynthetic(ctx, gp);
     finalizeSynthetic(ctx, ctx.in.mipsGot.get());
     finalizeSynthetic(ctx, ctx.in.igotPlt.get());
     finalizeSynthetic(ctx, ctx.in.gotPlt.get());

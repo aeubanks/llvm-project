@@ -1522,6 +1522,11 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
                    OPT_no_lto_unique_basic_block_section_names, false);
   ctx.arg.mapFile = args.getLastArgValue(OPT_Map);
   ctx.arg.mipsGotSize = args::getInteger(args, OPT_mips_got_size, 0xfff0);
+  ctx.arg.gotPartitionThreshold = 0x80000000;
+  if (auto *arg = args.getLastArg(OPT_got_partition_threshold))
+    if (!to_integer(arg->getValue(), ctx.arg.gotPartitionThreshold))
+      ErrAlways(ctx) << "--got-partition-threshold: number expected, but got "
+                     << arg->getValue();
   ctx.arg.mergeArmExidx =
       args.hasFlag(OPT_merge_exidx_entries, OPT_no_merge_exidx_entries, true);
   ctx.arg.mmapOutputFile =
@@ -3630,6 +3635,10 @@ template <class ELFT> void LinkerDriver::link(opt::InputArgList &args) {
     for (SectionCommand *cmd : ctx.script->sectionCommands)
       if (auto *osd = dyn_cast<OutputDesc>(cmd))
         osd->osec.finalizeInputSections();
+
+    // Now that all output sections and their members are finalized, split large
+    // x86-64 text sections and insert GOT partitions between the pieces.
+    ctx.script->partitionLargeExecSections();
   }
 
   // Two input sections with different output sections should not be folded.

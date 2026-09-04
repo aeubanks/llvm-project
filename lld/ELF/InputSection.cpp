@@ -59,8 +59,8 @@ InputSectionBase::InputSectionBase(InputFile *file, StringRef name,
                                    Kind sectionKind)
     : SectionBase(sectionKind, file, name, type, flags, link, info, addralign,
                   entsize),
-      bss(0), decodedCrel(0), keepUnique(0), nopFiller(0),
-      content_(data.data()), size(data.size()) {
+      bss(0), decodedCrel(0), keepUnique(0), nopFiller(0), isGotPartition(0),
+      hasGotPartitionRel(0), content_(data.data()), size(data.size()) {
   // In order to reduce memory allocation, we assume that mergeable
   // sections are smaller than 4 GiB, which is not an unreasonable
   // assumption as of 2017.
@@ -1006,6 +1006,8 @@ uint64_t InputSectionBase::getRelocTargetVA(Ctx &ctx, const Relocation &r,
   case R_TLSDESC:
     return ctx.in.got->getTlsDescAddr(*r.sym) + a;
   case R_TLSDESC_PC:
+    if (LLVM_UNLIKELY(r.sym->isGotPartitionBase))
+      return r.sym->getVA(ctx, a) - p;
     return ctx.in.got->getTlsDescAddr(*r.sym) + a - p;
   case R_TLSDESC_GOTPLT:
     return ctx.in.got->getTlsDescAddr(*r.sym) + a - ctx.in.gotPlt->getVA();
@@ -1020,6 +1022,8 @@ uint64_t InputSectionBase::getRelocTargetVA(Ctx &ctx, const Relocation &r,
   case R_TLSGD_GOTPLT:
     return ctx.in.got->getGlobalDynAddr(*r.sym) + a - ctx.in.gotPlt->getVA();
   case R_TLSGD_PC:
+    if (LLVM_UNLIKELY(r.sym->isGotPartitionBase))
+      return r.sym->getVA(ctx, a) - p;
     return ctx.in.got->getGlobalDynAddr(*r.sym) + a - p;
   case RE_LOONGARCH_TLSGD_PAGE_PC:
     return getLoongArchPageDelta(ctx.in.got->getGlobalDynAddr(*r.sym) + a, p,
@@ -1030,6 +1034,8 @@ uint64_t InputSectionBase::getRelocTargetVA(Ctx &ctx, const Relocation &r,
   case R_TLSLD_GOT:
     return ctx.in.got->getTlsIndexOff() + a;
   case R_TLSLD_PC:
+    if (LLVM_UNLIKELY(r.sym->isGotPartitionBase))
+      return r.sym->getVA(ctx, a) - p;
     return ctx.in.got->getTlsIndexVA() + a - p;
   default:
     llvm_unreachable("invalid expression");

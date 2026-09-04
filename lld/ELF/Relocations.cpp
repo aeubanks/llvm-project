@@ -788,6 +788,84 @@ void elf::addGotEntry(Ctx &ctx, Symbol &sym) {
                      ctx.target->symbolicRel);
 }
 
+uint64_t GotPartitionSection::addEntry(Symbol &sym) {
+  auto [it, inserted] = entryMap.try_emplace(&sym, 0);
+  if (!inserted)
+    return it->second;
+
+  uint64_t off = numEntries++ * ctx.target->gotEntrySize;
+  it->second = off;
+  if (sym.isTls()) {
+    if (!sym.isPreemptible && !ctx.arg.shared)
+      addReloc({R_TPREL, ctx.target->symbolicRel, off, 0, &sym});
+    else
+      ctx.in.relaDyn->addAddendOnlyRelocIfNonPreemptible(
+          ctx.target->tlsGotRel, *this, off, sym, ctx.target->symbolicRel);
+  } else if (sym.isPreemptible) {
+    ctx.in.relaDyn->addReloc(
+        {ctx.target->gotRel, this, off, true, sym, 0, R_ADDEND});
+  } else if (sym.isGnuIFunc()) {
+    getIRelativeSection(ctx).addReloc(
+        {ctx.target->iRelativeRel, this, off, false, sym, 0, R_ABS});
+  } else if (!ctx.arg.isPic || isAbsolute(sym)) {
+    addReloc({R_ABS, ctx.target->symbolicRel, off, 0, &sym});
+  } else {
+    addRelativeReloc(ctx, *this, off, sym, 0, R_ABS, ctx.target->symbolicRel);
+  }
+  return off;
+}
+
+uint64_t GotPartitionSection::addDynTlsEntry(Symbol &sym) {
+  auto [it, inserted] = tlsGdMap.try_emplace(&sym, 0);
+  if (!inserted)
+    return it->second;
+
+  uint64_t off = numEntries * ctx.target->gotEntrySize;
+  numEntries += 2;
+  it->second = off;
+  uint64_t offsetOff = off + ctx.arg.wordsize;
+  if (sym.isPreemptible) {
+    ctx.in.relaDyn->addSymbolReloc(ctx.target->tlsModuleIndexRel, *this, off,
+                                   sym);
+    ctx.in.relaDyn->addSymbolReloc(ctx.target->tlsOffsetRel, *this, offsetOff,
+                                   sym);
+  } else {
+    if (ctx.arg.shared)
+      ctx.in.relaDyn->addReloc({ctx.target->tlsModuleIndexRel, this, off});
+    else
+      addReloc({R_ADDEND, ctx.target->symbolicRel, off, 1, &sym});
+    addReloc({R_ABS, ctx.target->tlsOffsetRel, offsetOff, 0, &sym});
+  }
+  return off;
+}
+
+uint64_t GotPartitionSection::addTlsIndex() {
+  if (tlsIndexOff != uint64_t(-1))
+    return tlsIndexOff;
+
+  uint64_t off = numEntries * ctx.target->gotEntrySize;
+  numEntries += 2;
+  tlsIndexOff = off;
+  if (ctx.arg.shared)
+    ctx.in.relaDyn->addReloc({ctx.target->tlsModuleIndexRel, this, off});
+  else
+    addReloc({R_ADDEND, ctx.target->symbolicRel, off, 1, ctx.dummySym});
+  return off;
+}
+
+uint64_t GotPartitionSection::addTlsDescEntry(Symbol &sym) {
+  auto [it, inserted] = tlsDescMap.try_emplace(&sym, 0);
+  if (!inserted)
+    return it->second;
+
+  uint64_t off = numEntries * ctx.target->gotEntrySize;
+  numEntries += 2;
+  it->second = off;
+  ctx.in.relaDyn->addAddendOnlyRelocIfNonPreemptible(
+      ctx.target->tlsDescRel, *this, off, sym, ctx.target->tlsDescRel);
+  return off;
+}
+
 static void addGotAuthEntry(Ctx &ctx, Symbol &sym) {
   ctx.in.got->addEntry(sym);
   ctx.in.got->addAuthEntry(sym);
@@ -971,7 +1049,10 @@ void RelocScan::process(RelExpr expr, RelType type, uint64_t offset,
     } else if (!sym.isTls() || ctx.arg.emachine != EM_LOONGARCH) {
       // Many LoongArch TLS relocs reuse the RE_LOONGARCH_GOT type, in which
       // case the NEEDS_GOT flag shouldn't get set.
-      sym.setFlags(NEEDS_GOT);
+      if (hasGotPartition && expr == R_GOT_PC)
+        sec->hasGotPartitionRel = true;
+      else
+        sym.setFlags(NEEDS_GOT);
     }
   } else if (needsPlt(expr)) {
     sym.setFlags(NEEDS_PLT);
@@ -1434,6 +1515,35 @@ void elf::postScanRelocations(Ctx &ctx) {
 
   if (needsTlsIe)
     ctx.hasTlsIe.store(true, std::memory_order_relaxed);
+
+  if (!ctx.in.gotPartitions.empty()) {
+    SmallVector<InputSection *, 0> storage;
+    for (SectionCommand *cmd : ctx.script->sectionCommands) {
+      auto *osd = dyn_cast<OutputDesc>(cmd);
+      if (!osd || !osd->osec.gotPartition)
+        continue;
+      GotPartitionSection *gp = osd->osec.gotPartition;
+      for (InputSection *sec : getInputSections(osd->osec, storage)) {
+        if (!sec->hasGotPartitionRel)
+          continue;
+        for (Relocation &rel : sec->relocs()) {
+          uint64_t off;
+          if (rel.expr == R_GOT_PC)
+            off = gp->addEntry(*rel.sym);
+          else if (rel.expr == R_TLSGD_PC)
+            off = gp->addDynTlsEntry(*rel.sym);
+          else if (rel.expr == R_TLSLD_PC)
+            off = gp->addTlsIndex();
+          else if (rel.expr == R_TLSDESC_PC)
+            off = gp->addTlsDescEntry(*rel.sym);
+          else
+            continue;
+          rel.sym = gp->getBaseSym();
+          rel.addend += off;
+        }
+      }
+    }
+  }
 
   if (ctx.arg.branchToBranch)
     ctx.target->applyBranchToBranchOpt();

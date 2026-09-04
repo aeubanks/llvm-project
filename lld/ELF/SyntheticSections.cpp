@@ -611,6 +611,31 @@ void GotSection::writeTo(uint8_t *buf) {
   }
 }
 
+GotPartitionSection::GotPartitionSection(Ctx &ctx, OutputSection *os)
+    : SyntheticSection(ctx, os->name, SHT_PROGBITS,
+                       SHF_ALLOC | SHF_WRITE | (os->flags & SHF_X86_64_LARGE),
+                       ctx.target->gotEntrySize) {
+  this->parent = os;
+  this->isGotPartition = true;
+  baseSym = makeDefined(ctx, file, name, llvm::ELF::STB_LOCAL, STV_DEFAULT,
+                        llvm::ELF::STT_NOTYPE, /*value=*/0, /*size=*/0, this);
+  baseSym->isGotPartitionBase = true;
+}
+
+size_t GotPartitionSection::getSize() const {
+  return numEntries * ctx.target->gotEntrySize;
+}
+
+void GotPartitionSection::finalizeContents() {
+  size = numEntries * ctx.target->gotEntrySize;
+}
+
+void GotPartitionSection::writeTo(uint8_t *buf) {
+  if (size == 0)
+    return;
+  ctx.target->relocateAlloc(*this, buf);
+}
+
 static uint64_t getMipsPageCount(uint64_t size) {
   return (size + 0xfffe) / 0xffff + 1;
 }
