@@ -781,6 +781,35 @@ void elf::addGotEntry(Ctx &ctx, Symbol &sym) {
                      ctx.target->symbolicRel);
 }
 
+Defined *GotPartitionSection::addEntry(Symbol &sym) {
+  auto [it, inserted] = entryMap.try_emplace(&sym, nullptr);
+  if (!inserted)
+    return it->second;
+
+  uint64_t off = numEntries++ * ctx.target->gotEntrySize;
+  if (sym.isTls()) {
+    // FIXME: remove main GOT entry.
+    if (!sym.isPreemptible && !ctx.arg.shared)
+      addReloc({R_TPREL, ctx.target->symbolicRel, off, 0, &sym});
+    else
+      ctx.in.relaDyn->addAddendOnlyRelocIfNonPreemptible(
+          ctx.target->tlsGotRel, *this, off, sym, ctx.target->symbolicRel);
+  } else if (sym.isPreemptible) {
+    ctx.in.relaDyn->addReloc(
+        {ctx.target->gotRel, this, off, true, sym, 0, R_ADDEND});
+  } else if (sym.gotInIgot) {
+    getIRelativeSection(ctx).addReloc(
+        {ctx.target->iRelativeRel, this, off, false, sym, 0, R_ABS});
+  } else if (!ctx.arg.isPic || isAbsolute(sym)) {
+    addReloc({R_ABS, ctx.target->symbolicRel, off, 0, &sym});
+  } else {
+    addRelativeReloc(ctx, *this, off, sym, 0, R_ABS, ctx.target->symbolicRel);
+  }
+  it->second = makeDefined(ctx, file, sym.getName(), STB_LOCAL, STV_DEFAULT,
+                           STT_NOTYPE, off, /*size=*/0, this);
+  return it->second;
+}
+
 static void addGotAuthEntry(Ctx &ctx, Symbol &sym) {
   ctx.in.got->addEntry(sym);
   ctx.in.got->addAuthEntry(sym);

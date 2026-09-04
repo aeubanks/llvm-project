@@ -147,6 +147,26 @@ protected:
   SmallVector<AuthEntryInfo, 0> authEntries;
 };
 
+class GotPartitionSection final : public SyntheticSection {
+public:
+  GotPartitionSection(Ctx &ctx, OutputSection *os);
+  size_t getSize() const override;
+  void finalizeContents() override;
+  void writeTo(uint8_t *buf) override;
+  bool isNeeded() const override { return numEntries > 0; }
+
+  static bool classof(const SectionBase *sec) {
+    return isa<SyntheticSection>(sec) &&
+           cast<InputSectionBase>(sec)->isGotPartition;
+  }
+
+  Defined *addEntry(Symbol &sym);
+
+private:
+  llvm::DenseMap<Symbol *, Defined *> entryMap;
+  size_t numEntries = 0;
+};
+
 // .note.GNU-stack section.
 class GnuStackSection : public SyntheticSection {
 public:

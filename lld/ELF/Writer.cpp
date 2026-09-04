@@ -566,6 +566,9 @@ static bool isRelroSection(Ctx &ctx, const OutputSection *sec) {
   if (!(flags & SHF_ALLOC) || !(flags & SHF_WRITE))
     return false;
 
+  if (isGotPartitionSection(*sec))
+    return true;
+
   // Once initialized, TLS data segments are used as data templates
   // for a thread-local storage. For each new thread, runtime
   // allocates memory for a TLS and copy templates there. No thread
@@ -681,6 +684,10 @@ unsigned elf::getSectionRank(Ctx &ctx, OutputSection &osec) {
   // places.
   bool isExec = osec.flags & SHF_EXECINSTR;
   bool isWrite = osec.flags & SHF_WRITE;
+  if (isGotPartitionSection(osec)) {
+    isExec = true;
+    isWrite = false;
+  }
   bool isLarge = osec.flags & SHF_X86_64_LARGE && ctx.arg.emachine == EM_X86_64;
 
   if (!isWrite && !isExec) {
@@ -1549,6 +1556,8 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
     }
 
     finalizeSynthetic(ctx, ctx.in.got.get());
+    for (GotPartitionSection *gp : ctx.in.gotPartitions)
+      finalizeSynthetic(ctx, gp);
     if (ctx.in.mipsGot)
       ctx.in.mipsGot->updateAllocSize(ctx);
 
@@ -1623,6 +1632,7 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
     if (errCount(ctx))
       break;
   }
+
   if (!ctx.arg.relocatable)
     ctx.target->finalizeRelax(pass);
 
@@ -1749,6 +1759,13 @@ template <class ELFT> void Writer<ELFT>::optimizeBasicBlockJumps() {
 
 // Sections that finalizeAddressDependentContent may add to.
 static bool mayGrowLate(Ctx &ctx, SyntheticSection *sec) {
+  if (isa<GotPartitionSection>(sec))
+    return true;
+  if (ctx.arg.emachine == EM_X86_64 && ctx.arg.isPic && ctx.arg.relax &&
+      ctx.in.got && ctx.in.got->hasGotOffRel.load() &&
+      (ctx.arg.relrPackDynRelocs ? sec == ctx.in.relrDyn.get()
+                                 : sec == ctx.in.relaDyn.get()))
+    return true;
   if (sec != ctx.in.relaDyn.get())
     return false;
   // Relocations may move here from .relr.auth.dyn.
@@ -2075,6 +2092,8 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
     finalizeSynthetic(ctx, ctx.in.shStrTab.get());
     finalizeSynthetic(ctx, ctx.in.strTab.get());
     finalizeSynthetic(ctx, ctx.in.got.get());
+    for (GotPartitionSection *gp : ctx.in.gotPartitions)
+      finalizeSynthetic(ctx, gp);
     finalizeSynthetic(ctx, ctx.in.mipsGot.get());
     finalizeSynthetic(ctx, ctx.in.igotPlt.get());
     finalizeSynthetic(ctx, ctx.in.gotPlt.get());

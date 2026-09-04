@@ -1507,6 +1507,8 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
                    OPT_no_lto_unique_basic_block_section_names, false);
   ctx.arg.mapFile = args.getLastArgValue(OPT_Map);
   ctx.arg.mipsGotSize = args::getInteger(args, OPT_mips_got_size, 0xfff0);
+  ctx.arg.gotPartitionThreshold =
+      args::getInteger(args, OPT_got_partition_threshold, 0x80000000LL);
   ctx.arg.mergeArmExidx =
       args.hasFlag(OPT_merge_exidx_entries, OPT_no_merge_exidx_entries, true);
   ctx.arg.mmapOutputFile =
@@ -3562,6 +3564,10 @@ template <class ELFT> void LinkerDriver::link(opt::InputArgList &args) {
     // "orphans", and they are assigned to output sections by the default rule.
     // Process that.
     ctx.script->addOrphanSections();
+
+    // Now that all output sections and their members are known, split large
+    // x86-64 text sections and insert GOT partitions between the pieces.
+    ctx.script->partitionLargeExecSections();
   }
 
   {

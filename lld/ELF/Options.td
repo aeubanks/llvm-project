@@ -845,6 +845,11 @@ defm check_dynamic_relocations: BB<"check-dynamic-relocations",
     "Do not perform additional validation of the written dynamic relocations">,
   Flags<[HelpHidden]>;
 
+// Hidden option used for testing x86-64 GOT partitioning.
+defm got_partition_threshold:
+  Eq<"got-partition-threshold", "Threshold for GOT partitioning. 0x80000000 by default.">,
+  Flags<[HelpHidden]>;
+
 defm load_pass_plugins: EEq<"load-pass-plugin", "Load passes from plugin library">;
 
 // Hidden option, used by clang's -fsanitize=memtag-* option to emit an ELF note

@@ -848,6 +848,20 @@ InputSection *elf::getFirstInputSection(const OutputSection *os) {
   return nullptr;
 }
 
+bool elf::isGotPartitionSection(const OutputSection &os) {
+  for (SectionCommand *cmd : os.commands) {
+    if (auto *isd = dyn_cast<InputSectionDescription>(cmd)) {
+      for (InputSectionBase *s : isd->sectionBases)
+        if (isa<GotPartitionSection>(s))
+          return true;
+      for (InputSection *s : isd->sections)
+        if (isa<GotPartitionSection>(s))
+          return true;
+    }
+  }
+  return false;
+}
+
 ArrayRef<InputSection *>
 elf::getInputSections(const OutputSection &os,
                       SmallVector<InputSection *, 0> &storage) {

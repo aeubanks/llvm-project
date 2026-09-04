@@ -20,6 +20,7 @@
 namespace lld::elf {
 
 struct PhdrEntry;
+class GotPartitionSection;
 
 struct CompressedData {
   std::unique_ptr<SmallVector<uint8_t, 0>[]> shards;
@@ -63,6 +64,10 @@ public:
   // we consume relocations, but if --emit-relocs is specified (which is rare),
   // it may have a non-null value.
   OutputSection *relocationSection = nullptr;
+
+  // Partitioned GOT section associated with this section (if x86-64 GOT
+  // partitioning is used).
+  GotPartitionSection *gotPartition = nullptr;
 
   // Initially this field is the number of InputSections that have been added to
   // the OutputSection so far. Later on, after a call to assignAddresses, it
@@ -168,6 +173,8 @@ struct SectionClassDesc : SectionCommand {
 int getPriority(StringRef s);
 
 InputSection *getFirstInputSection(const OutputSection *os);
+bool isGotPartitionSection(const OutputSection &os);
+
 llvm::ArrayRef<InputSection *>
 getInputSections(const OutputSection &os,
                  SmallVector<InputSection *, 0> &storage);
