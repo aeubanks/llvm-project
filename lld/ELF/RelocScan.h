@@ -12,6 +12,7 @@
 #include "Config.h"
 #include "InputFiles.h"
 #include "InputSection.h"
+#include "OutputSections.h"
 #include "Relocations.h"
 #include "SyntheticSections.h"
 #include "Target.h"
@@ -53,9 +54,13 @@ public:
   InputSectionBase *sec;
   // `relocsVec` shard that discovered dynamic relocations are appended to.
   unsigned shard;
+  bool hasGotPartition = false;
 
   RelocScan(Ctx &ctx, InputSectionBase *sec, unsigned shard)
-      : ctx(ctx), sec(sec), shard(shard) {}
+      : ctx(ctx), sec(sec), shard(shard),
+        hasGotPartition(!ctx.in.gotPartitions.empty() && sec &&
+                        sec->getOutputSection() &&
+                        sec->getOutputSection()->gotPartition) {}
   template <class ELFT, class RelTy>
   void scan(typename Relocs<RelTy>::const_iterator &i, RelType type,
             int64_t addend);
@@ -103,6 +108,15 @@ public:
     }
   }
 
+  void setTlsIe(Symbol &sym) {
+    if (hasGotPartition) {
+      ctx.hasTlsIe.store(true, std::memory_order_relaxed);
+      sec->hasGotPartitionRel = true;
+    } else {
+      sym.setFlags(NEEDS_TLSIE);
+    }
+  }
+
   // Handle TLS Initial-Exec relocation.
   template <bool enableIeToLe = true>
   void handleTlsIe(RelExpr ieExpr, RelType type, uint64_t offset,
@@ -111,7 +125,7 @@ public:
       // Optimize to Local Exec.
       sec->addReloc({R_TPREL, type, offset, addend, &sym});
     } else {
-      sym.setFlags(NEEDS_TLSIE);
+      setTlsIe(sym);
       // R_GOT (absolute GOT address) needs a RELATIVE dynamic relocation in
       // PIC when the relocation uses the full address (not just low page bits).
       if (ieExpr == R_GOT && ctx.arg.isPic &&
@@ -129,7 +143,10 @@ public:
   bool handleTlsLd(RelExpr sharedExpr, RelType type, uint64_t offset,
                    int64_t addend, Symbol &sym) {
     if (ctx.arg.shared) {
-      ctx.needsTlsLd.store(true, std::memory_order_relaxed);
+      if (hasGotPartition)
+        sec->hasGotPartitionRel = true;
+      else
+        ctx.needsTlsLd.store(true, std::memory_order_relaxed);
       sec->addReloc({sharedExpr, type, offset, addend, &sym});
       return false;
     }
@@ -146,7 +163,7 @@ public:
     if (!ctx.arg.shared && ieExpr != R_NONE) {
       if (sym.isPreemptible) {
         // Optimize to Initial Exec.
-        sym.setFlags(NEEDS_TLSIE);
+        setTlsIe(sym);
         sec->addReloc({ieExpr, type, offset, addend, &sym});
       } else {
         // Optimize to Local Exec.
@@ -154,7 +171,10 @@ public:
       }
       return true;
     }
-    sym.setFlags(NEEDS_TLSGD);
+    if (hasGotPartition)
+      sec->hasGotPartitionRel = true;
+    else
+      sym.setFlags(NEEDS_TLSGD);
     sec->addReloc({sharedExpr, type, offset, addend, &sym});
     return false;
   }
@@ -163,11 +183,14 @@ public:
   void handleTlsDesc(RelExpr sharedExpr, RelExpr ieExpr, RelType type,
                      uint64_t offset, int64_t addend, Symbol &sym) {
     if (ctx.arg.shared) {
-      sym.setFlags(NEEDS_TLSDESC);
+      if (hasGotPartition)
+        sec->hasGotPartitionRel = true;
+      else
+        sym.setFlags(NEEDS_TLSDESC);
       sec->addReloc({sharedExpr, type, offset, addend, &sym});
     } else if (sym.isPreemptible) {
       // Optimize to Initial Exec.
-      sym.setFlags(NEEDS_TLSIE);
+      setTlsIe(sym);
       sec->addReloc({ieExpr, type, offset, addend, &sym});
     } else {
       // Optimize to Local Exec.

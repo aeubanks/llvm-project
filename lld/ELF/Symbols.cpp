@@ -160,6 +160,8 @@ uint64_t Symbol::getVA(Ctx &ctx, int64_t addend) const {
 }
 
 uint64_t Symbol::getGotVA(Ctx &ctx) const {
+  if (LLVM_UNLIKELY(isGotPartitionBase))
+    return getVA(ctx);
   if (gotInIgot)
     return ctx.in.igotPlt->getVA() + getGotPltOffset(ctx);
   return ctx.in.got->getVA() + getGotOffset(ctx);
@@ -176,6 +178,7 @@ uint64_t Symbol::getGotPltVA(Ctx &ctx) const {
 }
 
 uint64_t Symbol::getGotPltOffset(Ctx &ctx) const {
+  assert(isInPlt(ctx) && "symbol has no PLT entry");
   if (isInIplt)
     return getPltIdx(ctx) * ctx.target->gotEntrySize;
   return (getPltIdx(ctx) + ctx.target->gotPltHeaderEntriesNum) *

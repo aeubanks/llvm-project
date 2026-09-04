@@ -183,6 +183,14 @@ public:
   LLVM_PREFERRED_TYPE(bool)
   uint8_t nopFiller : 1;
 
+  // Whether this section is a GOT partition section.
+  LLVM_PREFERRED_TYPE(bool)
+  uint8_t isGotPartition : 1;
+
+  // Whether this section has relocations that need GOT partition entries.
+  LLVM_PREFERRED_TYPE(bool)
+  uint8_t hasGotPartitionRel : 1;
+
   mutable bool compressed = false;
 
   // Input sections are part of an output section. Special sections

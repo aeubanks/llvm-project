@@ -124,24 +124,29 @@
 # CHECK3-NEXT:  0000000000203307     0 NOTYPE  GLOBAL DEFAULT [[#]] (.data)   _edata
 # CHECK3-NEXT:  0000000000207d0d     0 NOTYPE  GLOBAL DEFAULT [[#]] (.ldata2) _end
 
-# CHECK4:      .note      NOTE
-# CHECK4-NEXT: .ltext     PROGBITS
-# CHECK4-NEXT: .lrodata   PROGBITS
-# CHECK4-NEXT: .rodata    PROGBITS
-# CHECK4-NEXT: .text      PROGBITS
-# CHECK4-NEXT: .data      PROGBITS
-# CHECK4-NEXT: .bss       NOBITS
-# CHECK4-NEXT: .ldata     PROGBITS
-# CHECK4-NEXT: .lbss      NOBITS
-# CHECK4-NEXT: .ltext_w   PROGBITS
-# CHECK4-NEXT: .comment   PROGBITS
+# CHECK4:      .note          NOTE
+# CHECK4-NEXT: .ltext         PROGBITS
+# CHECK4-NEXT: .got.ltext.0   PROGBITS
+# CHECK4-NEXT: .got.ltext_w.0 PROGBITS
+# CHECK4-NEXT: .lrodata       PROGBITS
+# CHECK4-NEXT: .rodata        PROGBITS
+# CHECK4-NEXT: .text          PROGBITS
+# CHECK4-NEXT: .data          PROGBITS
+# CHECK4-NEXT: .bss           NOBITS
+# CHECK4-NEXT: .ldata         PROGBITS
+# CHECK4-NEXT: .lbss          NOBITS
+# CHECK4-NEXT: .ltext_w       PROGBITS
+# CHECK4-NEXT: .comment       PROGBITS
 
 ## .ltext.hot and .ltext.unlikely are kept separate with -z keep-text-section-prefix.
-# CHECK5:      .ltext.hot      PROGBITS
-# CHECK5-NEXT: .ltext.unlikely PROGBITS
-# CHECK5-NEXT: .ltext          PROGBITS
-# CHECK5:      .text.hot       PROGBITS
-# CHECK5-NEXT: .text.unlikely  PROGBITS
+# CHECK5:      .ltext.hot            PROGBITS
+# CHECK5-NEXT: .got.ltext.hot.0      PROGBITS
+# CHECK5-NEXT: .ltext.unlikely       PROGBITS
+# CHECK5-NEXT: .got.ltext.unlikely.0 PROGBITS
+# CHECK5-NEXT: .ltext                PROGBITS
+# CHECK5-NEXT: .got.ltext.0          PROGBITS
+# CHECK5:      .text.hot             PROGBITS
+# CHECK5-NEXT: .text.unlikely        PROGBITS
 
 #--- a.s
 .globl _start, _etext, _edata, _end

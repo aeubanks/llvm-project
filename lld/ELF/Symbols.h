@@ -247,10 +247,11 @@ protected:
         binding(binding), stOther(stOther), symbolKind(k), isPreemptible(false),
         isUsedInRegularObj(false), isExported(false), ltoCanOmit(false),
         traced(false), hasVersionSuffix(false), inserted(false),
-        isInIplt(false), gotInIgot(false), folded(false),
-        archSpecificBit(false), scriptDefined(false), dsoDefined(false),
-        dsoProtected(false), versionScriptAssigned(false), thunkAccessed(false),
-        inDynamicList(false), referenced(false), referencedAfterWrap(false) {}
+        isInIplt(false), gotInIgot(false), isGotPartitionBase(false),
+        folded(false), archSpecificBit(false), scriptDefined(false),
+        dsoDefined(false), dsoProtected(false), versionScriptAssigned(false),
+        thunkAccessed(false), inDynamicList(false), referenced(false),
+        referencedAfterWrap(false) {}
 
   void overwrite(Symbol &sym, Kind k) const {
     if (sym.traced)
@@ -272,6 +273,12 @@ public:
   // Igot. This will be true only for certain non-preemptible ifuncs.
   LLVM_PREFERRED_TYPE(bool)
   uint8_t gotInIgot : 1;
+
+  // True if this is the synthetic symbol marking the start of a
+  // GotPartitionSection. GOT-relative relocations against it already have the
+  // entry offset in their addend, so their target is the symbol's own address.
+  LLVM_PREFERRED_TYPE(bool)
+  uint8_t isGotPartitionBase : 1;
 
   // True if defined relative to a section discarded by ICF.
   LLVM_PREFERRED_TYPE(bool)
