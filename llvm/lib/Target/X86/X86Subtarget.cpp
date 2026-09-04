@@ -124,12 +124,6 @@ X86Subtarget::classifyLocalReference(const GlobalValue *GV) const {
 
 unsigned char X86Subtarget::classifyGlobalReference(const GlobalValue *GV,
                                                     const Module &M) const {
-  // The static large model never uses stubs.
-  if ((TM.getCodeModel() == CodeModel::Large ||
-       TM.getCodeModel() == CodeModel::JIT) &&
-      !isPositionIndependent())
-    return X86II::MO_NO_FLAG;
-
   // Absolute symbols can be referenced directly.
   if (GV) {
     if (std::optional<ConstantRange> CR = GV->getAbsoluteSymbolRange()) {
@@ -142,6 +136,18 @@ unsigned char X86Subtarget::classifyGlobalReference(const GlobalValue *GV,
         return X86II::MO_NO_FLAG;
     }
   }
+
+  if (is64Bit() && TM.getCodeModel() == CodeModel::Large && isTargetELF()) {
+    if (AllowTaggedGlobals && GV && !isa<Function>(GV))
+      return X86II::MO_GOTPCREL_NORELAX;
+    return X86II::MO_GOTPCREL;
+  }
+
+  // The static large model never uses stubs.
+  if ((TM.getCodeModel() == CodeModel::Large ||
+       TM.getCodeModel() == CodeModel::JIT) &&
+      !isPositionIndependent())
+    return X86II::MO_NO_FLAG;
 
   if (TM.shouldAssumeDSOLocal(GV))
     return classifyLocalReference(GV);

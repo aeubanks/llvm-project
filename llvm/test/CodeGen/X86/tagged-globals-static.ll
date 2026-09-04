@@ -17,7 +17,7 @@ define ptr @global_addr() #0 {
 ;
 ; LARGE-LABEL: global_addr:
 ; LARGE:       # %bb.0:
-; LARGE-NEXT:    movabsq $global, %rax
+; LARGE-NEXT:    movq global@GOTPCREL_NORELAX(%rip), %rax
 ; LARGE-NEXT:    retq
   ret ptr @global
 }
@@ -31,7 +31,7 @@ define i32 @global_load() #0 {
 ;
 ; LARGE-LABEL: global_load:
 ; LARGE:       # %bb.0:
-; LARGE-NEXT:    movabsq $global, %rax
+; LARGE-NEXT:    movq global@GOTPCREL_NORELAX(%rip), %rax
 ; LARGE-NEXT:    movl (%rax), %eax
 ; LARGE-NEXT:    retq
   %load = load i32, ptr @global
@@ -47,7 +47,7 @@ define void @global_store() #0 {
 ;
 ; LARGE-LABEL: global_store:
 ; LARGE:       # %bb.0:
-; LARGE-NEXT:    movabsq $global, %rax
+; LARGE-NEXT:    movq global@GOTPCREL_NORELAX(%rip), %rax
 ; LARGE-NEXT:    movl $0, (%rax)
 ; LARGE-NEXT:    retq
   store i32 0, ptr @global
@@ -62,7 +62,7 @@ define ptr @func_addr() #0 {
 ;
 ; LARGE-LABEL: func_addr:
 ; LARGE:       # %bb.0:
-; LARGE-NEXT:    movabsq $func, %rax
+; LARGE-NEXT:    movq func@GOTPCREL(%rip), %rax
 ; LARGE-NEXT:    retq
   ret ptr @func
 }

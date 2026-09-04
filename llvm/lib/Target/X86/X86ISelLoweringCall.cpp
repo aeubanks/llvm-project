@@ -2574,10 +2574,12 @@ X86TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
 
   bool IsImpCall = false;
   bool IsCFGuardCall = false;
-  if (DAG.getTarget().getCodeModel() == CodeModel::Large ||
-      DAG.getTarget().getCodeModel() == CodeModel::JIT) {
+  if (DAG.getTarget().getCodeModel() == CodeModel::JIT ||
+      (DAG.getTarget().getCodeModel() == CodeModel::Large &&
+       !Subtarget.isTargetELF())) {
     assert(Is64Bit && "Large/JIT code model is only legal in 64-bit mode.");
-    // In the 64-bit large code model, we have to make all calls
+    // In the 64-bit large code model for ELF, we emit normal @PLT32 calls let linker
+    // insert thunks. For all other cases, we have to make all calls
     // through a register, since the call instruction's 32-bit
     // pc-relative offset may not be large enough to hold the whole
     // address.
