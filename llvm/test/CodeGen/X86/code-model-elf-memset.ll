@@ -56,16 +56,11 @@ define i32 @main() #0 {
 ; LARGE-PIC:       # %bb.0: # %entry
 ; LARGE-PIC-NEXT:    subq $424, %rsp # imm = 0x1A8
 ; LARGE-PIC-NEXT:    .cfi_def_cfa_offset 432
-; LARGE-PIC-NEXT:  .L0$pb:
-; LARGE-PIC-NEXT:    leaq .L0$pb(%rip), %rax
-; LARGE-PIC-NEXT:    movabsq $_GLOBAL_OFFSET_TABLE_-.L0$pb, %rcx
-; LARGE-PIC-NEXT:    addq %rax, %rcx
 ; LARGE-PIC-NEXT:    movl $0, {{[0-9]+}}(%rsp)
 ; LARGE-PIC-NEXT:    leaq {{[0-9]+}}(%rsp), %rdi
-; LARGE-PIC-NEXT:    movabsq $memset@GOT, %rax
 ; LARGE-PIC-NEXT:    movl $400, %edx # imm = 0x190
 ; LARGE-PIC-NEXT:    xorl %esi, %esi
-; LARGE-PIC-NEXT:    callq *(%rcx,%rax)
+; LARGE-PIC-NEXT:    callq memset@PLT
 ; LARGE-PIC-NEXT:    xorl %eax, %eax
 ; LARGE-PIC-NEXT:    addq $424, %rsp # imm = 0x1A8
 ; LARGE-PIC-NEXT:    .cfi_def_cfa_offset 8

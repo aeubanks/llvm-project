@@ -9,9 +9,8 @@ entry:
 ; FastISel's local value code was dead, so it's gone.
 ; CHECK-NOT: movl $42,
 ; SDag-ISel's arg mov:
-; CHECK: movabsq $targetfn, %[[REG:[^ ]*]]
 ; CHECK: movl $42, %edi
-; CHECK: callq *%[[REG]]
+; CHECK: callq targetfn@PLT
 
 }
 declare i32 @targetfn(i32)

@@ -3228,7 +3228,7 @@ define <8 x i32> @test_global_array(<8 x i64> %indxs) {
 ;
 ; X64-SKX-LARGE-LABEL: test_global_array:
 ; X64-SKX-LARGE:       # %bb.0:
-; X64-SKX-LARGE-NEXT:    movabsq $glob_array, %rax
+; X64-SKX-LARGE-NEXT:    movq glob_array@GOTPCREL(%rip), %rax
 ; X64-SKX-LARGE-NEXT:    vpxor %xmm1, %xmm1, %xmm1
 ; X64-SKX-LARGE-NEXT:    kxnorb %k0, %k0, %k1
 ; X64-SKX-LARGE-NEXT:    vpgatherqd (%rax,%zmm0,4), %ymm1 {%k1}
@@ -3274,7 +3274,7 @@ define <8 x i32> @test_global_array_zeroinitializer_index(<8 x i64> %indxs) {
 ;
 ; X64-SKX-LARGE-LABEL: test_global_array_zeroinitializer_index:
 ; X64-SKX-LARGE:       # %bb.0:
-; X64-SKX-LARGE-NEXT:    movabsq $glob_array, %rax
+; X64-SKX-LARGE-NEXT:    movq glob_array@GOTPCREL(%rip), %rax
 ; X64-SKX-LARGE-NEXT:    vpxor %xmm1, %xmm1, %xmm1
 ; X64-SKX-LARGE-NEXT:    kxnorb %k0, %k0, %k1
 ; X64-SKX-LARGE-NEXT:    vpgatherqd (%rax,%zmm0,4), %ymm1 {%k1}

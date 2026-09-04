@@ -85,10 +85,9 @@ define void @test_basic() #0 {
 ; X64-Linux-Large-NEXT:  .LBB0_2:
 ; X64-Linux-Large-NEXT:    subq $40, %rsp
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 48
-; X64-Linux-Large-NEXT:    movabsq $dummy_use, %rax
 ; X64-Linux-Large-NEXT:    movq %rsp, %rdi
 ; X64-Linux-Large-NEXT:    movl $10, %esi
-; X64-Linux-Large-NEXT:    callq *%rax
+; X64-Linux-Large-NEXT:    callq dummy_use@PLT
 ; X64-Linux-Large-NEXT:    addq $40, %rsp
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 8
 ; X64-Linux-Large-NEXT:    retq
@@ -353,10 +352,9 @@ define i32 @test_nested(ptr nest %closure, i32 %other) #0 {
 ; X64-Linux-Large-NEXT:    .cfi_offset %rbx, -16
 ; X64-Linux-Large-NEXT:    movl %edi, %ebx
 ; X64-Linux-Large-NEXT:    addl (%r10), %ebx
-; X64-Linux-Large-NEXT:    movabsq $dummy_use, %rax
 ; X64-Linux-Large-NEXT:    leaq {{[0-9]+}}(%rsp), %rdi
 ; X64-Linux-Large-NEXT:    movl $10, %esi
-; X64-Linux-Large-NEXT:    callq *%rax
+; X64-Linux-Large-NEXT:    callq dummy_use@PLT
 ; X64-Linux-Large-NEXT:    movl %ebx, %eax
 ; X64-Linux-Large-NEXT:    addq $48, %rsp
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 16
@@ -680,10 +678,9 @@ define void @test_large() #0 {
 ; X64-Linux-Large-NEXT:  .LBB2_2:
 ; X64-Linux-Large-NEXT:    subq $40008, %rsp # imm = 0x9C48
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 40016
-; X64-Linux-Large-NEXT:    movabsq $dummy_use, %rax
 ; X64-Linux-Large-NEXT:    leaq {{[0-9]+}}(%rsp), %rdi
 ; X64-Linux-Large-NEXT:    movl $3, %esi
-; X64-Linux-Large-NEXT:    callq *%rax
+; X64-Linux-Large-NEXT:    callq dummy_use@PLT
 ; X64-Linux-Large-NEXT:    addq $40008, %rsp # imm = 0x9C48
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 8
 ; X64-Linux-Large-NEXT:    retq
@@ -930,10 +927,9 @@ define fastcc void @test_fastcc() #0 {
 ; X64-Linux-Large-NEXT:  .LBB3_2:
 ; X64-Linux-Large-NEXT:    subq $40, %rsp
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 48
-; X64-Linux-Large-NEXT:    movabsq $dummy_use, %rax
 ; X64-Linux-Large-NEXT:    movq %rsp, %rdi
 ; X64-Linux-Large-NEXT:    movl $10, %esi
-; X64-Linux-Large-NEXT:    callq *%rax
+; X64-Linux-Large-NEXT:    callq dummy_use@PLT
 ; X64-Linux-Large-NEXT:    addq $40, %rsp
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 8
 ; X64-Linux-Large-NEXT:    retq
@@ -1172,10 +1168,9 @@ define fastcc void @test_fastcc_large() #0 {
 ; X64-Linux-Large-NEXT:  .LBB4_2:
 ; X64-Linux-Large-NEXT:    subq $40008, %rsp # imm = 0x9C48
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 40016
-; X64-Linux-Large-NEXT:    movabsq $dummy_use, %rax
 ; X64-Linux-Large-NEXT:    leaq {{[0-9]+}}(%rsp), %rdi
 ; X64-Linux-Large-NEXT:    movl $3, %esi
-; X64-Linux-Large-NEXT:    callq *%rax
+; X64-Linux-Large-NEXT:    callq dummy_use@PLT
 ; X64-Linux-Large-NEXT:    addq $40008, %rsp # imm = 0x9C48
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 8
 ; X64-Linux-Large-NEXT:    retq
@@ -1428,9 +1423,8 @@ define fastcc void @test_fastcc_large_with_ecx_arg(i32 %a) #0 {
 ; X64-Linux-Large-NEXT:    subq $40008, %rsp # imm = 0x9C48
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 40016
 ; X64-Linux-Large-NEXT:    movl %edi, %esi
-; X64-Linux-Large-NEXT:    movabsq $dummy_use, %rax
 ; X64-Linux-Large-NEXT:    leaq {{[0-9]+}}(%rsp), %rdi
-; X64-Linux-Large-NEXT:    callq *%rax
+; X64-Linux-Large-NEXT:    callq dummy_use@PLT
 ; X64-Linux-Large-NEXT:    addq $40008, %rsp # imm = 0x9C48
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 8
 ; X64-Linux-Large-NEXT:    retq
@@ -1754,17 +1748,13 @@ define i32 @test_sibling_call_empty_frame(i32 %x) #0 {
 ; X64-Linux-Large-LABEL: test_sibling_call_empty_frame:
 ; X64-Linux-Large:       # %bb.0:
 ; X64-Linux-Large-NEXT:    cmpq %fs:112, %rsp
-; X64-Linux-Large-NEXT:    jbe .LBB8_1
-; X64-Linux-Large-NEXT:  # %bb.2:
-; X64-Linux-Large-NEXT:    movabsq $callee, %rax
-; X64-Linux-Large-NEXT:    jmpq *%rax # TAILCALL
-; X64-Linux-Large-NEXT:  .LBB8_1:
+; X64-Linux-Large-NEXT:    ja callee@PLT # TAILCALL
+; X64-Linux-Large-NEXT:  # %bb.1:
 ; X64-Linux-Large-NEXT:    movl $0, %r10d
 ; X64-Linux-Large-NEXT:    movl $0, %r11d
 ; X64-Linux-Large-NEXT:    callq *__morestack_addr(%rip)
 ; X64-Linux-Large-NEXT:    retq
-; X64-Linux-Large-NEXT:    movabsq $callee, %rax
-; X64-Linux-Large-NEXT:    jmpq *%rax # TAILCALL
+; X64-Linux-Large-NEXT:    jmp callee@PLT # TAILCALL
 ;
 ; X32ABI-LABEL: test_sibling_call_empty_frame:
 ; X32ABI:       # %bb.0:
@@ -1915,10 +1905,9 @@ define i32 @test_nested_unused(ptr nest %unused) #0 {
 ; X64-Linux-Large-NEXT:  .LBB9_2:
 ; X64-Linux-Large-NEXT:    subq $40, %rsp
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 48
-; X64-Linux-Large-NEXT:    movabsq $dummy_use, %rax
 ; X64-Linux-Large-NEXT:    movq %rsp, %rdi
 ; X64-Linux-Large-NEXT:    movl $10, %esi
-; X64-Linux-Large-NEXT:    callq *%rax
+; X64-Linux-Large-NEXT:    callq dummy_use@PLT
 ; X64-Linux-Large-NEXT:    movl $123, %eax
 ; X64-Linux-Large-NEXT:    addq $40, %rsp
 ; X64-Linux-Large-NEXT:    .cfi_def_cfa_offset 8

@@ -94,21 +94,20 @@ protected:
       )"""";
     StringRef AssemblyF(FooStr);
 
-    // Get target triple for X86_64
-    Triple TargetTriple("x86_64--");
+    // Get target triple for i686
+    Triple TargetTriple("i686--");
     std::string Error;
     const Target *T = TargetRegistry::lookupTarget("", TargetTriple, Error);
     // Skip the test if target is not built.
     if (!T)
       GTEST_SKIP();
 
-    // Get TargetMachine.
-    // Use Reloc::Model::PIC_ and CodeModel::Model::Large
+    // Use Reloc::Model::PIC_ and CodeModel::Model::Small
     // to get GOT during codegen as MO_ExternalSymbol.
     TargetOptions Options;
     TM = std::unique_ptr<TargetMachine>(T->createTargetMachine(
         TargetTriple, "", "", Options, Reloc::Model::PIC_,
-        CodeModel::Model::Large, CodeGenOptLevel::Default));
+        CodeModel::Model::Small, CodeGenOptLevel::Default));
     if (!TM)
       GTEST_SKIP();
 
