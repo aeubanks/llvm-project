@@ -11608,7 +11608,8 @@ ARMTargetLowering::EmitLowered__chkstk(MachineInstr &MI,
         .addReg(ARM::CPSR,
                 RegState::Implicit | RegState::Define | RegState::Dead);
     break;
-  case CodeModel::Large: {
+  case CodeModel::Large:
+  case CodeModel::JIT: {
     MachineRegisterInfo &MRI = MBB->getParent()->getRegInfo();
     Register Reg = MRI.createVirtualRegister(&ARM::rGPRRegClass);
 

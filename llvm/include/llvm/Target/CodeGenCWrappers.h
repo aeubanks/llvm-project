@@ -40,6 +40,8 @@ inline std::optional<CodeModel::Model> unwrap(LLVMCodeModel Model, bool &JIT) {
     return CodeModel::Medium;
   case LLVMCodeModelLarge:
     return CodeModel::Large;
+  case LLVMCodeModelJIT:
+    return CodeModel::JIT;
   }
   return CodeModel::Small;
 }
@@ -56,6 +58,8 @@ inline LLVMCodeModel wrap(CodeModel::Model Model) {
     return LLVMCodeModelMedium;
   case CodeModel::Large:
     return LLVMCodeModelLarge;
+  case CodeModel::JIT:
+    return LLVMCodeModelJIT;
   }
   llvm_unreachable("Bad CodeModel!");
 }

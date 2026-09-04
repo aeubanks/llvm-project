@@ -46,7 +46,8 @@ void TargetLoweringObjectFile::initialize(MCContext &ctx,
   delete Mang;
   Mang = new Mangler();
   initMCObjectFileInfo(ctx, TM.isPositionIndependent(),
-                       TM.getCodeModel() == CodeModel::Large);
+                       TM.getCodeModel() == CodeModel::Large ||
+                           TM.getCodeModel() == CodeModel::JIT);
 
   // Reset various EH DWARF encodings.
   PersonalityEncoding = LSDAEncoding = TTypeEncoding = dwarf::DW_EH_PE_absptr;

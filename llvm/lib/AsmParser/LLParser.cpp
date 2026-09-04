@@ -2647,6 +2647,8 @@ bool LLParser::parseOptionalCodeModel(CodeModel::Model &model) {
     model = CodeModel::Medium;
   else if (StrVal == "large")
     model = CodeModel::Large;
+  else if (StrVal == "jit")
+    model = CodeModel::JIT;
   else
     return tokError(ErrMsg);
   if (parseToken(lltok::StringConstant, ErrMsg))
