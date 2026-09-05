@@ -35,6 +35,8 @@ irManglingOptionsFromTargetOptions(const TargetOptions &Opts) {
 Expected<SimpleCompiler::CompileResult> SimpleCompiler::operator()(Module &M) {
   if (M.getDataLayout().isDefault())
     M.setDataLayout(TM.createDataLayout());
+  if (!M.getCodeModel())
+    M.setCodeModel(TM.getCodeModel());
 
   CompileResult CachedObject = tryToLoadFromObjectCache(M);
   if (CachedObject)
