@@ -347,6 +347,7 @@ namespace llvm {
                                 bool AllowParens = false);
     bool parseOptionalPrefAlignment(MaybeAlign &Alignment);
     bool parseOptionalCodeModel(CodeModel::Model &model);
+    bool parseOptionalCodeModel(std::optional<CodeModel::Model> &model);
     bool parseOptionalAttrBytes(lltok::Kind AttrKind,
                                 std::optional<uint64_t> &Bytes,
                                 bool ErrorNoBytes = true);

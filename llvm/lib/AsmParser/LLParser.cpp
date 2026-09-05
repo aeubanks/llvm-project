@@ -2647,7 +2647,7 @@ bool LLParser::parseOptionalPrefAlignment(MaybeAlign &Alignment) {
 bool LLParser::parseOptionalCodeModel(CodeModel::Model &model) {
   Lex.Lex();
   auto StrVal = Lex.getStrVal();
-  auto ErrMsg = "expected global code model string";
+  auto ErrMsg = "expected code model string";
   if (StrVal == "tiny")
     model = CodeModel::Tiny;
   else if (StrVal == "small")
@@ -2664,6 +2664,17 @@ bool LLParser::parseOptionalCodeModel(CodeModel::Model &model) {
     return tokError(ErrMsg);
   if (parseToken(lltok::StringConstant, ErrMsg))
     return true;
+  return false;
+}
+
+bool LLParser::parseOptionalCodeModel(std::optional<CodeModel::Model> &model) {
+  model = std::nullopt;
+  if (Lex.getKind() != lltok::kw_code_model)
+    return false;
+  CodeModel::Model M;
+  if (parseOptionalCodeModel(M))
+    return true;
+  model = M;
   return false;
 }
 
@@ -7250,6 +7261,7 @@ bool LLParser::parseFunctionHeader(Function *&Fn, bool IsDefine,
   Constant *Prologue = nullptr;
   Constant *PersonalityFn = nullptr;
   Comdat *C;
+  std::optional<CodeModel::Model> FnCodeModel;
 
   if (parseArgumentList(ArgList, UnnamedArgNums, IsVarArg) ||
       parseOptionalUnnamedAddr(UnnamedAddr) ||
@@ -7261,6 +7273,7 @@ bool LLParser::parseFunctionHeader(Function *&Fn, bool IsDefine,
       parseOptionalComdat(FunctionName, C) ||
       parseOptionalAlignment(Alignment) ||
       parseOptionalPrefAlignment(PrefAlignment) ||
+      parseOptionalCodeModel(FnCodeModel) ||
       (EatIfPresent(lltok::kw_gc) && parseStringConstant(GC)) ||
       (EatIfPresent(lltok::kw_prefix) && parseGlobalTypeAndValue(Prefix)) ||
       (EatIfPresent(lltok::kw_prologue) && parseGlobalTypeAndValue(Prologue)) ||
@@ -7365,6 +7378,8 @@ bool LLParser::parseFunctionHeader(Function *&Fn, bool IsDefine,
   Fn->setPreferredAlignment(PrefAlignment);
   Fn->setSection(Section);
   Fn->setPartition(Partition);
+  if (FnCodeModel)
+    Fn->setCodeModel(*FnCodeModel);
   Fn->setComdat(C);
   Fn->setPersonalityFn(PersonalityFn);
   if (!GC.empty()) Fn->setGC(GC);

@@ -846,6 +846,8 @@ void Function::copyAttributesFrom(const Function *Src) {
   GlobalObject::copyAttributesFrom(Src);
   setCallingConv(Src->getCallingConv());
   setAttributes(Src->getAttributes());
+  if (auto CM = Src->getCodeModel())
+    setCodeModel(*CM);
   if (Src->hasGC())
     setGC(Src->getGC());
   else
@@ -1232,4 +1234,20 @@ bool llvm::CallingConv::supportsNonVoidReturnType(CallingConv::ID CC) {
   }
 
   llvm_unreachable("covered callingconv switch");
+}
+
+void Function::setCodeModel(CodeModel::Model CM) {
+  unsigned CodeModelData = static_cast<unsigned>(CM) + 1;
+  unsigned OldData = getGlobalValueSubClassData();
+  unsigned NewData = (OldData & ~(CodeModelMask << CodeModelShift)) |
+                     (CodeModelData << CodeModelShift);
+  setGlobalValueSubClassData(NewData);
+  assert(getCodeModel() == CM && "Code model representation error!");
+}
+
+void Function::clearCodeModel() {
+  unsigned OldData = getGlobalValueSubClassData();
+  unsigned NewData = OldData & ~(CodeModelMask << CodeModelShift);
+  setGlobalValueSubClassData(NewData);
+  assert(!getCodeModel() && "Code model representation error!");
 }
