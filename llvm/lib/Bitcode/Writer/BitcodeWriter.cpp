@@ -1754,6 +1754,7 @@ void ModuleBitcodeWriter::writeModuleInfo() {
     Vals.push_back(addToStrtab(F.getPartition()));
     Vals.push_back(F.getPartition().size());
     Vals.push_back(getEncodedAlign(F.getPreferredAlignment()));
+    Vals.push_back(F.getCodeModelRaw());
 
     unsigned AbbrevToUse = 0;
     Stream.EmitRecord(bitc::MODULE_CODE_FUNCTION, Vals, AbbrevToUse);
