@@ -572,6 +572,14 @@ GlobalVariable *IRLinker::copyGlobalVariableProto(const GlobalVariable *SGVar) {
                          SGVar->getAddressSpace());
   NewDGV->setAlignment(SGVar->getAlign());
   NewDGV->copyAttributesFrom(SGVar);
+  const NamedMDNode *DstModFlags = DstM.getModuleFlagsMetadata();
+  bool HasDstFlags = DstModFlags && DstModFlags->getNumOperands() > 0;
+  if (!SGVar->getCodeModel() && (HasDstFlags || IsPerformingImport) &&
+      (SrcM->getCodeModel() != DstM.getCodeModel() ||
+       SrcM->getLargeDataThreshold() != DstM.getLargeDataThreshold())) {
+    NewDGV->setCodeModel(SGVar->isLargeGlobalValue() ? CodeModel::Large
+                                                     : CodeModel::Small);
+  }
   return NewDGV;
 }
 
@@ -603,6 +611,12 @@ Function *IRLinker::copyFunctionProto(const Function *SF) {
                              SF->getAddressSpace(), SF->getName(), &DstM);
   F->copyAttributesFrom(SF);
   F->setAttributes(mapAttributeTypes(F->getContext(), F->getAttributes()));
+  const NamedMDNode *DstModFlags = DstM.getModuleFlagsMetadata();
+  bool HasDstFlags = DstModFlags && DstModFlags->getNumOperands() > 0;
+  if (!SF->getCodeModel() && (HasDstFlags || IsPerformingImport) &&
+      SrcM->getCodeModel() != DstM.getCodeModel())
+    F->setCodeModel(SF->isLargeGlobalValue() ? CodeModel::Large
+                                             : CodeModel::Small);
   return F;
 }
 
@@ -1369,6 +1383,9 @@ Error IRLinker::linkModuleFlagsMetadata() {
       continue;
     }
     case Module::Warning: {
+      break;
+    }
+    case Module::Ignore: {
       break;
     }
     case Module::Max: {
