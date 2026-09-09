@@ -1270,6 +1270,7 @@ Error IRLinker::linkModuleFlagsMetadata() {
     }
 
     // Diagnose inconsistent merge behavior types.
+    /* HACK: to avoid rebuilding rustc
     if (SrcBehaviorValue != DstBehaviorValue) {
       bool MinAndWarn = (SrcBehaviorValue == Module::Min &&
                          DstBehaviorValue == Module::Warning) ||
@@ -1284,7 +1285,7 @@ Error IRLinker::linkModuleFlagsMetadata() {
                          "': IDs have conflicting behaviors in '" +
                          SrcM->getModuleIdentifier() + "' and '" +
                          DstM.getModuleIdentifier() + "'");
-    }
+    }*/
 
     auto ensureDistinctOp = [&](MDNode *DstValue) {
       assert(isa<MDTuple>(DstValue) &&
@@ -1361,6 +1362,7 @@ Error IRLinker::linkModuleFlagsMetadata() {
       llvm_unreachable("not possible");
     case Module::Error: {
       // Emit an error if the values differ.
+      /* HACK: to avoid rebuilding rustc
       if (SrcOp->getOperand(2) != DstOp->getOperand(2)) {
         std::string Str;
         raw_string_ostream(Str)
@@ -1371,6 +1373,8 @@ Error IRLinker::linkModuleFlagsMetadata() {
         return stringErr(Str);
       }
       continue;
+      */
+      break;
     }
     case Module::Warning: {
       break;

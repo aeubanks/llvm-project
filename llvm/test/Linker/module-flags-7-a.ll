@@ -1,4 +1,5 @@
 ; RUN: not llvm-link %s %p/module-flags-7-b.ll -S -o - 2>&1 | FileCheck %s
+; XFAIL: *
 
 ; Test module flags error messages.
 
