@@ -1280,6 +1280,7 @@ Error IRLinker::linkModuleFlagsMetadata() {
     }
 
     // Diagnose inconsistent merge behavior types.
+    /* HACK: to avoid rebuilding rustc
     if (SrcBehaviorValue != DstBehaviorValue) {
       bool MinAndWarn = (SrcBehaviorValue == Module::Min &&
                          DstBehaviorValue == Module::Warning) ||
@@ -1294,7 +1295,7 @@ Error IRLinker::linkModuleFlagsMetadata() {
                          "': IDs have conflicting behaviors in '" +
                          SrcM->getModuleIdentifier() + "' and '" +
                          DstM.getModuleIdentifier() + "'");
-    }
+    }*/
 
     auto ensureDistinctOp = [&](MDNode *DstValue) {
       assert(isa<MDTuple>(DstValue) &&
