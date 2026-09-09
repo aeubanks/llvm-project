@@ -1404,6 +1404,7 @@ runThinLTOBackend(CompilerInstance &CI, ModuleSummaryIndex *CombinedIndex,
           /*IRAddStream=*/nullptr, CGOpts.CmdArgs)) {
     handleAllErrors(std::move(E), [&](ErrorInfoBase &EIB) {
       errs() << "Error running ThinLTO backend: " << EIB.message() << '\n';
+      report_fatal_error("ThinLTO backend error");
     });
   }
 }
