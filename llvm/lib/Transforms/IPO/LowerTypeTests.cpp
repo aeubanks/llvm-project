@@ -933,6 +933,7 @@ void LowerTypeTestsModule::allocateByteArrays() {
   auto ByteArray =
       new GlobalVariable(M, ByteArrayConst->getType(), /*isConstant=*/true,
                          GlobalValue::PrivateLinkage, ByteArrayConst);
+  ByteArray->setCodeModel(CodeModel::Small);
 
   for (unsigned I = 0; I != ByteArrayInfos.size(); ++I) {
     ByteArrayInfo *BAI = &ByteArrayInfos[I];
@@ -1158,6 +1159,7 @@ void LowerTypeTestsModule::buildBitSetsFromGlobalVariables(
   auto *CombinedGlobal =
       new GlobalVariable(M, NewInit->getType(), /*isConstant=*/true,
                          GlobalValue::PrivateLinkage, NewInit);
+  CombinedGlobal->setCodeModel(CodeModel::Small);
   CombinedGlobal->setAlignment(MaxAlign);
 
   StructType *NewTy = cast<StructType>(NewInit->getType());
@@ -2083,6 +2085,7 @@ void LowerTypeTestsModule::buildBitSetsFromFunctionsNative(
                        GlobalValue::PrivateLinkage,
                        M.getDataLayout().getProgramAddressSpace(),
                        ".cfi.jumptable", &M);
+  JumpTableFn->setCodeModel(CodeModel::Small);
   ArrayType *JumpTableEntryType = ArrayType::get(Int8Ty, EntrySize);
   ArrayType *JumpTableType =
       ArrayType::get(JumpTableEntryType, Functions.size());

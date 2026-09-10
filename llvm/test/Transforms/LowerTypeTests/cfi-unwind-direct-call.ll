@@ -197,7 +197,7 @@ attributes #8 = { noreturn nounwind }
 ;
 ; CHECK: Function Attrs: minsize optsize
 ; CHECK-LABEL: define weak_odr hidden void @__cfi_check_fail(
-; CHECK-SAME: ptr noundef [[TMP0:%.*]], ptr noundef [[TMP1:%.*]]) #[[ATTR2:[0-9]+]] {
+; CHECK-SAME: ptr noundef [[TMP0:%.*]], ptr noundef [[TMP1:%.*]]) #[[ATTR3:[0-9]+]] {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[DOTNOT:%.*]] = icmp eq ptr [[TMP0]], null, !nosanitize [[META14:![0-9]+]]
 ; CHECK-NEXT:    br i1 [[DOTNOT]], label [[TRAP:%.*]], label [[CONT:%.*]], !nosanitize [[META14]]
@@ -221,7 +221,7 @@ attributes #8 = { noreturn nounwind }
 ;
 ; CHECK: Function Attrs: naked nocf_check noinline
 ; CHECK-LABEL: define internal void @_Z7throw_ei.cfi_jt(
-; CHECK-SAME: ) #[[ATTR5:[0-9]+]] prefalign(8) {
+; CHECK-SAME: ) #[[ATTR5:[0-9]+]] prefalign(8) code_model "small" {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    tail call void asm sideeffect "jmp ${0:c}@plt\0Aint3\0Aint3\0Aint3\0A", "s"(ptr nonnull @_Z7throw_ei) #[[ATTR6]]
 ; CHECK-NEXT:    unreachable
