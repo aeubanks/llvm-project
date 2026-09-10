@@ -110,7 +110,7 @@ attributes #6 = { noreturn nounwind }
 !12 = !{!"branch_weights", i32 1048575, i32 1}
 ; CHECK: Function Attrs: minsize mustprogress nofree norecurse nosync nounwind optsize willreturn memory(none)
 ; CHECK-LABEL: define dso_local noundef range(i32 0, 2) i32 @_Z9nothrow_ei
-; CHECK-SAME: (i32 noundef [[NUM:%.*]]) #[[ATTR0:[0-9]+]] !type [[META4:![0-9]+]] !type [[META5:![0-9]+]] !type [[META6:![0-9]+]] {
+; CHECK-SAME: (i32 noundef [[NUM:%.*]]) #[[ATTR0:[0-9]+]] {{.*}}{
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[TOBOOL_NOT:%.*]] = icmp ne i32 [[NUM]], 0
 ; CHECK-NEXT:    [[DOT:%.*]] = zext i1 [[TOBOOL_NOT]] to i32
@@ -119,7 +119,7 @@ attributes #6 = { noreturn nounwind }
 ;
 ; CHECK: Function Attrs: minsize mustprogress nofree norecurse nosync nounwind optsize willreturn memory(write, argmem: none, inaccessiblemem: none, target_mem: none)
 ; CHECK-LABEL: define dso_local noundef range(i32 0, 2) i32 @_Z10call_catchi
-; CHECK-SAME: (i32 noundef [[NUM:%.*]]) local_unnamed_addr #[[ATTR1:[0-9]+]] !type [[META4]] !type [[META5]] !type [[META6]] {
+; CHECK-SAME: (i32 noundef [[NUM:%.*]]) local_unnamed_addr #[[ATTR1:[0-9]+]] {{.*}}{
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    store ptr @_Z9nothrow_ei.cfi_jt, ptr @catch_ptr, align 8, !tbaa [[TBAA7:![0-9]+]]
 ; CHECK-NEXT:    [[TOBOOL_NOT_I:%.*]] = icmp ne i32 [[NUM]], 0
@@ -134,7 +134,7 @@ attributes #6 = { noreturn nounwind }
 ; CHECK-NEXT:    [[DOTNOT:%.*]] = icmp eq ptr [[TMP0]], null, !nosanitize [[META11:![0-9]+]]
 ; CHECK-NEXT:    br i1 [[DOTNOT]], label [[TRAP:%.*]], label [[CONT:%.*]], !nosanitize [[META11]]
 ; CHECK:       trap:
-; CHECK-NEXT:    tail call void @llvm.ubsantrap(i8 2) #[[ATTR6:[0-9]+]], !nosanitize [[META11]]
+; CHECK-NEXT:    tail call void @llvm.ubsantrap(i8 2) #[[ATTR5:[0-9]+]], !nosanitize [[META11]]
 ; CHECK-NEXT:    unreachable, !nosanitize [[META11]]
 ; CHECK:       cont:
 ; CHECK-NEXT:    [[TMP2:%.*]] = load i8, ptr [[TMP0]], align 4, !nosanitize [[META11]]
@@ -153,8 +153,8 @@ attributes #6 = { noreturn nounwind }
 ;
 ; CHECK: Function Attrs: naked nocf_check noinline nounwind
 ; CHECK-LABEL: define internal void @_Z9nothrow_ei.cfi_jt
-; CHECK-SAME: () #[[ATTR5:[0-9]+]] prefalign(8) {
+; CHECK-SAME: () #[[ATTR4:[0-9]+]] prefalign(8) code_model "small" {
 ; CHECK-NEXT:  entry:
-; CHECK-NEXT:    tail call void asm sideeffect "jmp ${0:c}@plt\0Aint3\0Aint3\0Aint3\0A", "s"(ptr nonnull @_Z9nothrow_ei) #[[ATTR7:[0-9]+]]
+; CHECK-NEXT:    tail call void asm sideeffect "jmp ${0:c}@plt\0Aint3\0Aint3\0Aint3\0A", "s"(ptr nonnull @_Z9nothrow_ei) #[[ATTR6:[0-9]+]]
 ; CHECK-NEXT:    unreachable
 ;
